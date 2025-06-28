@@ -10,7 +10,7 @@ export default function Home() {
             <BookOpenCheck className="w-12 h-12" />
             CampusConnect
           </h1>
-          <p className="text-muted-foreground mt-2 font-body">Your AI-powered learning companion.</p>
+          <p className="text-muted-foreground mt-2 font-body">Tu compañero de aprendizaje con IA.</p>
         </div>
         <AuthForm />
       </div>

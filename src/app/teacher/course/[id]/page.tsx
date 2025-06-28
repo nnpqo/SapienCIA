@@ -18,7 +18,7 @@ export default function TeacherCoursePage({ params }: { params: { id: string } }
   if (!course) {
     return (
         <div className="flex h-screen items-center justify-center">
-            <p>Course not found.</p>
+            <p>Curso no encontrado.</p>
         </div>
     )
   }
@@ -27,35 +27,35 @@ export default function TeacherCoursePage({ params }: { params: { id: string } }
     <div className="p-4 md:p-8">
       <div className="mb-8">
         <h1 className="text-4xl font-headline font-bold">{course.title}</h1>
-        <p className="text-lg text-muted-foreground font-body mt-2">Course Code: <Badge variant="secondary" className="text-base font-mono">{course.code}</Badge></p>
+        <p className="text-lg text-muted-foreground font-body mt-2">Código del Curso: <Badge variant="secondary" className="text-base font-mono">{course.code}</Badge></p>
       </div>
 
       <Tabs defaultValue="materials" className="w-full">
         <TabsList className="mb-6 grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-5">
-          <TabsTrigger value="materials">Materials</TabsTrigger>
-          <TabsTrigger value="content">AI Content</TabsTrigger>
-          <TabsTrigger value="challenges">Challenges</TabsTrigger>
-          <TabsTrigger value="students">Students</TabsTrigger>
-          <TabsTrigger value="leaderboard">Leaderboard</TabsTrigger>
+          <TabsTrigger value="materials">Materiales</TabsTrigger>
+          <TabsTrigger value="content">Contenido con IA</TabsTrigger>
+          <TabsTrigger value="challenges">Desafíos</TabsTrigger>
+          <TabsTrigger value="students">Estudiantes</TabsTrigger>
+          <TabsTrigger value="leaderboard">Clasificación</TabsTrigger>
         </TabsList>
 
         <TabsContent value="materials">
           <Card>
             <CardHeader className="flex flex-col md:flex-row items-start md:items-center justify-between gap-2">
               <div>
-                <CardTitle>Course Materials</CardTitle>
-                <CardDescription>Upload and manage course files.</CardDescription>
+                <CardTitle>Materiales del Curso</CardTitle>
+                <CardDescription>Sube y gestiona los archivos del curso.</CardDescription>
               </div>
-              <Button size="sm"><Upload className="mr-2 h-4 w-4"/> Upload Material</Button>
+              <Button size="sm"><Upload className="mr-2 h-4 w-4"/> Subir Material</Button>
             </CardHeader>
             <CardContent>
               <ul className="space-y-3">
                 <li className="flex items-center justify-between p-3 rounded-md border">
-                  <div className="flex items-center gap-3"><FileText className="text-primary"/><span>Chapter 1: Introduction to AI.pdf</span></div>
+                  <div className="flex items-center gap-3"><FileText className="text-primary"/><span>Capítulo 1: Introducción a la IA.pdf</span></div>
                   <Button variant="ghost" size="icon"><Trash2 className="h-4 w-4"/></Button>
                 </li>
                  <li className="flex items-center justify-between p-3 rounded-md border">
-                  <div className="flex items-center gap-3"><FileText className="text-primary"/><span>Chapter 2: Machine Learning Basics.pdf</span></div>
+                  <div className="flex items-center gap-3"><FileText className="text-primary"/><span>Capítulo 2: Fundamentos de Machine Learning.pdf</span></div>
                   <Button variant="ghost" size="icon"><Trash2 className="h-4 w-4"/></Button>
                 </li>
               </ul>
@@ -67,13 +67,13 @@ export default function TeacherCoursePage({ params }: { params: { id: string } }
           <Card>
              <CardHeader className="flex flex-col md:flex-row items-start md:items-center justify-between gap-2">
                 <div>
-                  <CardTitle>AI Generated Content</CardTitle>
-                  <CardDescription>Create quizzes, surveys, and assignments.</CardDescription>
+                  <CardTitle>Contenido Generado por IA</CardTitle>
+                  <CardDescription>Crea cuestionarios, encuestas y tareas.</CardDescription>
                 </div>
                 <AIContentGenerator courseName={course.title} />
               </CardHeader>
               <CardContent className="text-center text-muted-foreground py-10">
-                <p>No content generated yet. Use the AI assistant to get started.</p>
+                <p>Aún no se ha generado contenido. Utiliza el asistente de IA para empezar.</p>
               </CardContent>
           </Card>
         </TabsContent>
@@ -82,18 +82,18 @@ export default function TeacherCoursePage({ params }: { params: { id: string } }
             <Card>
               <CardHeader className="flex flex-col md:flex-row items-start md:items-center justify-between gap-2">
                   <div>
-                    <CardTitle>Challenges</CardTitle>
-                    <CardDescription>Create gamified challenges for your students.</CardDescription>
+                    <CardTitle>Desafíos</CardTitle>
+                    <CardDescription>Crea desafíos gamificados para tus estudiantes.</CardDescription>
                   </div>
-                  <Button size="sm"><PlusCircle className="mr-2 h-4 w-4"/> Create Challenge</Button>
+                  <Button size="sm"><PlusCircle className="mr-2 h-4 w-4"/> Crear Desafío</Button>
               </CardHeader>
               <CardContent className="space-y-4">
                   <div className="flex items-center justify-between p-4 rounded-lg border">
                       <div>
-                          <h3 className="font-semibold flex items-center gap-2 text-lg"><AwardIcon className="text-primary"/> The Explorer</h3>
-                          <p className="text-sm text-muted-foreground">Complete the first two chapters.</p>
+                          <h3 className="font-semibold flex items-center gap-2 text-lg"><AwardIcon className="text-primary"/> El Explorador</h3>
+                          <p className="text-sm text-muted-foreground">Completa los dos primeros capítulos.</p>
                       </div>
-                      <p className="font-bold text-primary shrink-0">+100 Points</p>
+                      <p className="font-bold text-primary shrink-0">+100 Puntos</p>
                   </div>
               </CardContent>
             </Card>
@@ -102,8 +102,8 @@ export default function TeacherCoursePage({ params }: { params: { id: string } }
         <TabsContent value="students">
           <Card>
             <CardHeader>
-                <CardTitle>Enrolled Students</CardTitle>
-                <CardDescription>A list of all students currently enrolled in this course.</CardDescription>
+                <CardTitle>Estudiantes Inscritos</CardTitle>
+                <CardDescription>Una lista de todos los estudiantes actualmente inscritos en este curso.</CardDescription>
             </CardHeader>
             <CardContent>
               <ul className="space-y-3">

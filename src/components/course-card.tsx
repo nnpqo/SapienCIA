@@ -17,14 +17,14 @@ export function CourseCard({ course, userRole }: CourseCardProps) {
       </div>
       <CardHeader className="p-6">
         <CardTitle className="font-headline text-xl">{course.title}</CardTitle>
-        <p className="text-sm text-muted-foreground pt-2">Taught by {course.teacher}</p>
+        <p className="text-sm text-muted-foreground pt-2">Impartido por {course.teacher}</p>
       </CardHeader>
       <CardContent className="p-6 pt-0 flex-grow">
         <CardDescription className="font-body">{course.description}</CardDescription>
       </CardContent>
       <CardFooter className="p-6 pt-0 mt-auto bg-card">
         <Link href={`/${userRole}/course/${course.id}`} className="w-full">
-          <Button className="w-full font-headline">View Course</Button>
+          <Button className="w-full font-headline">Ver Curso</Button>
         </Link>
       </CardFooter>
     </Card>

@@ -21,7 +21,7 @@ interface ChatbotProps {
 
 export function Chatbot({ courseMaterial }: ChatbotProps) {
   const [messages, setMessages] = useState<Message[]>([
-    { text: "Hello! I'm your AI assistant. I'm here to guide you, not give direct answers. How can I help you with your course today?", isUser: false }
+    { text: "¡Hola! Soy tu asistente de IA. Estoy aquí para guiarte, no para darte respuestas directas. ¿Cómo puedo ayudarte hoy con tu curso?", isUser: false }
   ])
   const [input, setInput] = useState("")
   const [isLoading, setIsLoading] = useState(false)
@@ -48,7 +48,7 @@ export function Chatbot({ courseMaterial }: ChatbotProps) {
       setMessages(prev => [...prev, botMessage])
     } catch (error) {
       console.error("Error with chatbot:", error)
-      const errorMessage: Message = { text: "Sorry, I'm having trouble connecting. Please try again later.", isUser: false }
+      const errorMessage: Message = { text: "Lo siento, tengo problemas para conectarme. Por favor, inténtalo más tarde.", isUser: false }
       setMessages(prev => [...prev, errorMessage])
     } finally {
       setIsLoading(false)
@@ -64,7 +64,7 @@ export function Chatbot({ courseMaterial }: ChatbotProps) {
       </SheetTrigger>
       <SheetContent className="flex flex-col p-0">
         <SheetHeader className="p-6 pb-2">
-          <SheetTitle className="font-headline flex items-center gap-2"><Bot/> AI Learning Assistant</SheetTitle>
+          <SheetTitle className="font-headline flex items-center gap-2"><Bot/> Asistente de Aprendizaje IA</SheetTitle>
         </SheetHeader>
         <ScrollArea className="flex-grow my-4 px-6" ref={scrollAreaRef}>
           <div className="space-y-6">
@@ -91,7 +91,7 @@ export function Chatbot({ courseMaterial }: ChatbotProps) {
                     <AvatarFallback className="bg-secondary"><Bot size={20}/></AvatarFallback>
                   </Avatar>
                   <div className="p-3 rounded-lg bg-secondary">
-                      <p className="text-sm font-body">Thinking...</p>
+                      <p className="text-sm font-body">Pensando...</p>
                   </div>
               </div>
             )}
@@ -102,7 +102,7 @@ export function Chatbot({ courseMaterial }: ChatbotProps) {
             value={input} 
             onChange={(e) => setInput(e.target.value)} 
             onKeyPress={(e) => e.key === 'Enter' && handleSend()}
-            placeholder="Ask a question..."
+            placeholder="Haz una pregunta..."
             disabled={isLoading}
           />
           <Button variant="ghost" size="icon" disabled={isLoading}><Mic /></Button>

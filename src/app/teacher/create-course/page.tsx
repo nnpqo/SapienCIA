@@ -12,34 +12,34 @@ export default function CreateCoursePage() {
       <div className="mb-8">
         <Link href="/teacher/dashboard" className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-4">
             <ArrowLeft className="h-4 w-4" />
-            Back to Dashboard
+            Volver al Panel
         </Link>
-        <h1 className="text-4xl font-headline font-bold">Create a New Course</h1>
+        <h1 className="text-4xl font-headline font-bold">Crear un Nuevo Curso</h1>
       </div>
       <Card>
         <CardHeader>
-          <CardTitle className="font-headline">Course Details</CardTitle>
-          <CardDescription>Fill in the details for your new course. A unique join code will be generated automatically.</CardDescription>
+          <CardTitle className="font-headline">Detalles del Curso</CardTitle>
+          <CardDescription>Completa los detalles para tu nuevo curso. Se generará un código de acceso único automáticamente.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="space-y-2">
-            <Label htmlFor="title">Course Title</Label>
-            <Input id="title" placeholder="e.g., Advanced Mathematics" />
+            <Label htmlFor="title">Título del Curso</Label>
+            <Input id="title" placeholder="Ej: Matemática Avanzada" />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="description">Course Description</Label>
-            <Textarea id="description" placeholder="A brief description of the course content and objectives." />
+            <Label htmlFor="description">Descripción del Curso</Label>
+            <Textarea id="description" placeholder="Una breve descripción del contenido y los objetivos del curso." />
           </div>
            <div className="space-y-2">
-            <Label htmlFor="image">Course Image</Label>
+            <Label htmlFor="image">Imagen del Curso</Label>
             <Input id="image" type="file" />
           </div>
           <div className="flex justify-end gap-4">
             <Link href="/teacher/dashboard">
-              <Button variant="outline">Cancel</Button>
+              <Button variant="outline">Cancelar</Button>
             </Link>
             <Link href="/teacher/dashboard">
-                <Button>Create Course</Button>
+                <Button>Crear Curso</Button>
             </Link>
           </div>
         </CardContent>

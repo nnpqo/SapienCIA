@@ -17,7 +17,7 @@ export function Leaderboard() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="font-headline text-2xl">Leaderboard</CardTitle>
+        <CardTitle className="font-headline text-2xl">Clasificación</CardTitle>
       </CardHeader>
       <CardContent>
         <ul className="space-y-4">

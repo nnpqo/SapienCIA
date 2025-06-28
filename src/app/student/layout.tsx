@@ -20,17 +20,17 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
           <SidebarMenu>
             <SidebarMenuItem>
               <SidebarMenuButton asChild>
-                <Link href="/student/dashboard"><Home />Dashboard</Link>
+                <Link href="/student/dashboard"><Home />Panel</Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>
               <SidebarMenuButton asChild>
-                <Link href="/student/dashboard"><Book />My Courses</Link>
+                <Link href="/student/dashboard"><Book />Mis Cursos</Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>
               <SidebarMenuButton asChild>
-                <Link href="#"><Award />Rewards</Link>
+                <Link href="#"><Award />Recompensas</Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>
@@ -40,18 +40,18 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
              <SidebarMenuItem>
                 <div className="flex items-center gap-3 p-2">
                     <Avatar className="h-10 w-10">
-                        <AvatarImage src="https://placehold.co/40x40.png?text=S" alt="Student Avatar" />
-                        <AvatarFallback>S</AvatarFallback>
+                        <AvatarImage src="https://placehold.co/40x40.png?text=E" alt="Avatar de Estudiante" />
+                        <AvatarFallback>E</AvatarFallback>
                     </Avatar>
                     <div className="flex flex-col overflow-hidden">
-                        <span className="text-sm font-semibold truncate">Student Name</span>
-                        <span className="text-xs text-muted-foreground truncate">student@example.com</span>
+                        <span className="text-sm font-semibold truncate">Estudiante</span>
+                        <span className="text-xs text-muted-foreground truncate">estudiante@ejemplo.com</span>
                     </div>
                 </div>
             </SidebarMenuItem>
             <SidebarMenuItem>
               <SidebarMenuButton asChild>
-                <Link href="/"><LogOut />Logout</Link>
+                <Link href="/"><LogOut />Cerrar Sesión</Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>

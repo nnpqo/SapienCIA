@@ -12,13 +12,13 @@ export default function TeacherDashboard() {
     <div className="p-4 md:p-8">
       <div className="flex flex-col md:flex-row justify-between md:items-center mb-8 gap-4">
         <div>
-            <h1 className="text-4xl font-headline font-bold">My Dashboard</h1>
-            <p className="text-muted-foreground mt-2">Here are the courses you've created.</p>
+            <h1 className="text-4xl font-headline font-bold">Mi Panel</h1>
+            <p className="text-muted-foreground mt-2">Aquí están los cursos que has creado.</p>
         </div>
         <Link href="/teacher/create-course">
           <Button>
             <PlusCircle className="mr-2 h-4 w-4" />
-            Create New Course
+            Crear Nuevo Curso
           </Button>
         </Link>
       </div>
