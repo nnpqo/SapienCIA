@@ -10,7 +10,7 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
-export const GenerateQuizChallengeInputSchema = z.object({
+const GenerateQuizChallengeInputSchema = z.object({
   topic: z.string().describe('El tema específico para el cuestionario.'),
 });
 export type GenerateQuizChallengeInput = z.infer<typeof GenerateQuizChallengeInputSchema>;
@@ -22,7 +22,7 @@ const QuestionSchema = z.object({
     explanation: z.string().describe('Una breve explicación de por qué la respuesta es correcta.')
 });
 
-export const GenerateQuizChallengeOutputSchema = z.object({
+const GenerateQuizChallengeOutputSchema = z.object({
   title: z.string().describe('Un título creativo y relevante para el cuestionario.'),
   questions: z.array(QuestionSchema).describe('Una lista de 5 preguntas para el cuestionario.'),
 });
