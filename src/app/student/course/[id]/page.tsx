@@ -1,5 +1,6 @@
 "use client"
 
+import React from "react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -9,7 +10,8 @@ import { FileText, Award as AwardIcon } from "lucide-react"
 import { Chatbot } from "@/components/chatbot"
 
 export default function StudentCoursePage({ params }: { params: { id: string } }) {
-  const course = mockCourses.find(c => c.id === params.id)
+  const resolvedParams = React.use(params)
+  const course = mockCourses.find(c => c.id === resolvedParams.id)
 
   if (!course) {
     return (

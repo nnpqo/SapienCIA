@@ -1,5 +1,6 @@
 "use client"
 
+import React from "react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -11,7 +12,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 
 export default function TeacherCoursePage({ params }: { params: { id: string } }) {
-  const course = mockCourses.find(c => c.id === params.id)
+  const resolvedParams = React.use(params)
+  const course = mockCourses.find(c => c.id === resolvedParams.id)
 
   if (!course) {
     return (
