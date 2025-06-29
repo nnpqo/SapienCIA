@@ -211,7 +211,8 @@ export default function StudentCoursePage({ params }: { params: { id: string } }
                   <ul className="space-y-3">
                     {assignments.map(assignment => {
                       const isCompleted = completedAssignments.has(assignment.id);
-                      const isPastDue = isPast(new Date(assignment.dueDate));
+                      const dueDate = new Date(assignment.dueDate);
+                      const isPastDue = isPast(dueDate);
                       const canSubmit = !isCompleted && !isPastDue;
 
                       return (
@@ -222,7 +223,9 @@ export default function StudentCoursePage({ params }: { params: { id: string } }
                               <span className="font-semibold">{assignment.title}</span>
                               <div className="flex items-center gap-2 text-xs text-muted-foreground">
                                 <Clock className="h-3 w-3" />
-                                <span>Vence: {format(new Date(assignment.dueDate), "dd MMM, yyyy 'a las' p", { locale: es })}</span>
+                                {!isNaN(dueDate.getTime()) ? (
+                                  <span>Vence: {format(dueDate, "dd MMM, yyyy 'a las' p", { locale: es })}</span>
+                                ) : null}
                                 {isPastDue && !isCompleted && <Badge variant="destructive">Vencida</Badge>}
                               </div>
                             </div>

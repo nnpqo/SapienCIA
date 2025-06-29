@@ -217,7 +217,9 @@ export default function TeacherCoursePage({ params }: { params: { id: string } }
               <CardContent>
                 {assignments.length > 0 ? (
                   <Accordion type="single" collapsible className="w-full space-y-3">
-                    {assignments.map(assignment => (
+                    {assignments.map(assignment => {
+                       const dueDate = new Date(assignment.dueDate);
+                       return (
                        <AccordionItem value={assignment.id} key={assignment.id} className="border rounded-md px-4">
                         <AccordionTrigger className="hover:no-underline">
                            <div className="flex items-center justify-between w-full">
@@ -227,7 +229,9 @@ export default function TeacherCoursePage({ params }: { params: { id: string } }
                                   <span className="font-semibold">{assignment.title}</span>
                                   <div className="flex items-center gap-2 text-xs text-muted-foreground">
                                     <Clock className="h-3 w-3" />
-                                    <span>Vence: {format(new Date(assignment.dueDate), "dd MMM, yyyy 'a las' p", { locale: es })}</span>
+                                    {!isNaN(dueDate.getTime()) ? (
+                                      <span>Vence: {format(dueDate, "dd MMM, yyyy 'a las' p", { locale: es })}</span>
+                                    ) : null}
                                   </div>
                                 </div>
                               </div>
@@ -269,7 +273,8 @@ export default function TeacherCoursePage({ params }: { params: { id: string } }
                           </div>
                         </AccordionContent>
                       </AccordionItem>
-                    ))}
+                       )
+                    })}
                   </Accordion>
                 ) : (
                   <div className="text-center text-muted-foreground py-10">
