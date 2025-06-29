@@ -44,7 +44,7 @@ export default function StudentCoursePage({ params }: { params: { id: string } }
   const [assignmentSubmission, setAssignmentSubmission] = React.useState("");
   
   const quizForm = useForm<{ answers: Record<string, string> }>()
-  const [quizResults, setQuizResults] = React.useState<{ score: number, total: number } | null>(null)
+  const [quizResults, setQuizResults] = React.useState<{ score: number; total: number; explanations: { question: string; explanation: string; isCorrect: boolean }[] } | null>(null)
 
   // For this mock, we assume the logged-in student is the first one in the list.
   const currentStudent = mockStudents[0];
@@ -109,13 +109,15 @@ export default function StudentCoursePage({ params }: { params: { id: string } }
   const onQuizSubmit = (data: { answers: Record<string, string> }) => {
     if (!viewingAssignment || !viewingAssignment.questions) return;
     let score = 0;
-    viewingAssignment.questions.forEach((q, index) => {
+    const explanations = viewingAssignment.questions.map((q, index) => {
       const userAnswerIndex = parseInt(data.answers[String(index)], 10);
-      if (userAnswerIndex === q.correctAnswerIndex) {
+      const isCorrect = userAnswerIndex === q.correctAnswerIndex;
+      if (isCorrect) {
         score++;
       }
+      return { question: q.question, explanation: q.explanation, isCorrect };
     });
-    setQuizResults({ score, total: viewingAssignment.questions.length });
+    setQuizResults({ score, total: viewingAssignment.questions.length, explanations });
   };
 
   if (!course) {
@@ -332,16 +334,24 @@ export default function StudentCoursePage({ params }: { params: { id: string } }
               
               {viewingAssignment.type === 'quiz' && viewingAssignment.questions && (
                 quizResults ? (
-                  <div className="py-4">
+                  <div className="py-4 space-y-4">
                     <Alert variant={quizResults.score === quizResults.total ? "default" : "destructive"}>
                       <AlertTitle>¡Resultados del Cuestionario!</AlertTitle>
                       <AlertDescription>
                         Obtuviste {quizResults.score} de {quizResults.total} respuestas correctas.
                       </AlertDescription>
                     </Alert>
+                     <div className="max-h-[30vh] overflow-y-auto space-y-4 pr-2">
+                        {quizResults.explanations.map((item, index) => (
+                            <Alert key={index} variant={item.isCorrect ? "default" : "destructive"}>
+                                <AlertTitle className="font-bold">{item.question}</AlertTitle>
+                                <AlertDescription>{item.explanation}</AlertDescription>
+                            </Alert>
+                        ))}
+                    </div>
                     <DialogFooter className="mt-4">
                       <Button variant="secondary" onClick={() => handleAssignmentComplete(viewingAssignment!.id)}>
-                        Cerrar
+                        Cerrar y Marcar como Realizada
                       </Button>
                     </DialogFooter>
                   </div>
