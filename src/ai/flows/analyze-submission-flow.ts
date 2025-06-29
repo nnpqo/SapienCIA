@@ -10,7 +10,7 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
-export const AnalyzeSubmissionInputSchema = z.object({
+const AnalyzeSubmissionInputSchema = z.object({
   photoDataUri: z
     .string()
     .describe(
@@ -21,7 +21,7 @@ export const AnalyzeSubmissionInputSchema = z.object({
 });
 export type AnalyzeSubmissionInput = z.infer<typeof AnalyzeSubmissionInputSchema>;
 
-export const AnalyzeSubmissionOutputSchema = z.object({
+const AnalyzeSubmissionOutputSchema = z.object({
   isApproved: z.boolean().describe('Si la imagen es una entrega válida y relevante para el desafío.'),
   feedback: z.string().describe('Retroalimentación constructiva para el estudiante sobre su entrega.'),
 });
