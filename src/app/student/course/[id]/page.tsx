@@ -32,6 +32,7 @@ export default function StudentCoursePage({ params }: { params: { id: string } }
   const [completedChallenges, setCompletedChallenges] = React.useState<Set<string>>(new Set());
   const [completedAssignments, setCompletedAssignments] = React.useState<Set<string>>(new Set());
   const [viewingAssignment, setViewingAssignment] = React.useState<Assignment | null>(null);
+  const [assignmentSubmission, setAssignmentSubmission] = React.useState("");
   
   const quizForm = useForm<{ answers: Record<string, string> }>()
   const [quizResults, setQuizResults] = React.useState<{ score: number, total: number } | null>(null)
@@ -78,11 +79,13 @@ export default function StudentCoursePage({ params }: { params: { id: string } }
     setViewingAssignment(null);
     setQuizResults(null);
     quizForm.reset();
+    setAssignmentSubmission("");
   };
 
   const handleOpenAssignment = (assignment: Assignment) => {
     setQuizResults(null);
     quizForm.reset();
+    setAssignmentSubmission("");
     setViewingAssignment(assignment);
   }
 
@@ -117,6 +120,12 @@ export default function StudentCoursePage({ params }: { params: { id: string } }
   return (
     <div className="p-4 md:p-8">
       <Tabs defaultValue="assignments" className="w-full">
+        <TabsList className="mb-6 grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-4">
+          <TabsTrigger value="assignments">Tareas</TabsTrigger>
+          <TabsTrigger value="challenges">Desafíos</TabsTrigger>
+          <TabsTrigger value="materials">Materiales</TabsTrigger>
+          <TabsTrigger value="leaderboard">Clasificación</TabsTrigger>
+        </TabsList>
         <TabsContent value="materials">
           <Card>
             <CardHeader>
@@ -302,9 +311,14 @@ export default function StudentCoursePage({ params }: { params: { id: string } }
 
               {viewingAssignment.type === 'assignment' && (
                 <div className="py-4 space-y-4">
-                    <Textarea placeholder="Escribe tu respuesta aquí..." rows={10}/>
+                    <Textarea 
+                      placeholder="Escribe tu respuesta aquí..." 
+                      rows={10}
+                      value={assignmentSubmission}
+                      onChange={(e) => setAssignmentSubmission(e.target.value)}
+                    />
                     <DialogFooter>
-                        <Button onClick={() => handleAssignmentComplete(viewingAssignment.id)}>
+                        <Button onClick={() => handleAssignmentComplete(viewingAssignment.id)} disabled={!assignmentSubmission}>
                             <Send className="mr-2 h-4 w-4"/> Enviar Tarea
                         </Button>
                     </DialogFooter>
@@ -314,9 +328,14 @@ export default function StudentCoursePage({ params }: { params: { id: string } }
               {viewingAssignment.type === 'survey' && (
                 <div className="py-4 space-y-4">
                      <p className="text-sm text-muted-foreground">Responde las siguientes preguntas:</p>
-                     <Textarea placeholder="Tus comentarios son importantes..." rows={10}/>
+                     <Textarea 
+                       placeholder="Tus comentarios son importantes..." 
+                       rows={10}
+                       value={assignmentSubmission}
+                       onChange={(e) => setAssignmentSubmission(e.target.value)}
+                     />
                     <DialogFooter>
-                        <Button onClick={() => handleAssignmentComplete(viewingAssignment.id)}>
+                        <Button onClick={() => handleAssignmentComplete(viewingAssignment.id)} disabled={!assignmentSubmission}>
                             Enviar Encuesta
                         </Button>
                     </DialogFooter>
