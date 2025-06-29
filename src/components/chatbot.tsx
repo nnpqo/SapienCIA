@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef, useEffect, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import { Input } from "@/components/ui/input"
@@ -28,13 +28,35 @@ declare global {
 
 export function Chatbot({ courseMaterial }: ChatbotProps) {
   const [messages, setMessages] = useState<Message[]>([
-    { text: "¡Hola! Soy tu asistente de IA. ¿Cómo puedo ayudarte con tu curso?", isUser: false }
+    { text: "¡Hola! Soy StudiaChat. ¿Cómo puedo ayudarte con tu curso?", isUser: false }
   ])
   const [input, setInput] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [isListening, setIsListening] = useState(false)
   const scrollAreaRef = useRef<HTMLDivElement>(null)
   const recognitionRef = useRef<any>(null)
+
+  const handleSend = useCallback(async (textToSend: string) => {
+    const messageText = textToSend.trim();
+    if (messageText === "") return
+    
+    const userMessage: Message = { text: messageText, isUser: true }
+    setMessages(prev => [...prev, userMessage])
+    setInput("")
+    setIsLoading(true)
+
+    try {
+      const result = await studentChatbotAssistance({ question: messageText, courseMaterial })
+      const botMessage: Message = { text: result.answer, isUser: false }
+      setMessages(prev => [...prev, botMessage])
+    } catch (error) {
+      console.error("Error with chatbot:", error)
+      const errorMessage: Message = { text: "Lo siento, tengo problemas para conectarme. Por favor, inténtalo más tarde.", isUser: false }
+      setMessages(prev => [...prev, errorMessage])
+    } finally {
+      setIsLoading(false)
+    }
+  }, [courseMaterial])
 
   useEffect(() => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
@@ -59,12 +81,12 @@ export function Chatbot({ courseMaterial }: ChatbotProps) {
 
       recognition.onresult = (event: any) => {
         const transcript = event.results[event.results.length - 1][0].transcript.trim()
-        setInput(transcript)
+        handleSend(transcript)
       }
 
       recognitionRef.current = recognition
     }
-  }, [])
+  }, [handleSend])
 
 
   useEffect(() => {
@@ -73,28 +95,6 @@ export function Chatbot({ courseMaterial }: ChatbotProps) {
     }
   }, [messages])
 
-  const handleSend = async () => {
-    if (input.trim() === "") return
-    
-    const userMessage: Message = { text: input, isUser: true }
-    setMessages(prev => [...prev, userMessage])
-    const currentInput = input;
-    setInput("")
-    setIsLoading(true)
-
-    try {
-      const result = await studentChatbotAssistance({ question: currentInput, courseMaterial })
-      const botMessage: Message = { text: result.answer, isUser: false }
-      setMessages(prev => [...prev, botMessage])
-    } catch (error) {
-      console.error("Error with chatbot:", error)
-      const errorMessage: Message = { text: "Lo siento, tengo problemas para conectarme. Por favor, inténtalo más tarde.", isUser: false }
-      setMessages(prev => [...prev, errorMessage])
-    } finally {
-      setIsLoading(false)
-    }
-  }
-  
   const handleMicClick = () => {
     if (!recognitionRef.current) return;
 
@@ -115,7 +115,7 @@ export function Chatbot({ courseMaterial }: ChatbotProps) {
       </SheetTrigger>
       <SheetContent className="flex flex-col p-0">
         <SheetHeader className="p-6 pb-2">
-          <SheetTitle className="font-headline flex items-center gap-2"><Bot/> Asistente de Aprendizaje IA</SheetTitle>
+          <SheetTitle className="font-headline flex items-center gap-2"><Bot/> StudiaChat</SheetTitle>
         </SheetHeader>
         <ScrollArea className="flex-grow my-4 px-6" ref={scrollAreaRef}>
           <div className="space-y-6">
@@ -152,14 +152,14 @@ export function Chatbot({ courseMaterial }: ChatbotProps) {
           <Input 
             value={input} 
             onChange={(e) => setInput(e.target.value)} 
-            onKeyPress={(e) => e.key === 'Enter' && handleSend()}
+            onKeyPress={(e) => e.key === 'Enter' && handleSend(input)}
             placeholder={isListening ? "Escuchando..." : "Haz una pregunta..."}
             disabled={isLoading}
           />
           <Button variant="ghost" size="icon" onClick={handleMicClick} disabled={isLoading || !recognitionRef.current}>
             <Mic className={cn(isListening && "text-destructive")} />
           </Button>
-          <Button onClick={handleSend} disabled={isLoading || !input.trim()}><Send /></Button>
+          <Button onClick={() => handleSend(input)} disabled={isLoading || !input.trim()}><Send /></Button>
         </div>
       </SheetContent>
     </Sheet>

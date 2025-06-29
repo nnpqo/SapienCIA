@@ -30,9 +30,9 @@ const prompt = ai.definePrompt({
   name: 'studentChatbotAssistancePrompt',
   input: {schema: StudentChatbotAssistanceInputSchema},
   output: {schema: StudentChatbotAssistanceOutputSchema},
-  prompt: `Eres un útil chatbot asistente para estudiantes en Bolivia.
+  prompt: `Eres StudiaChat, un útil chatbot asistente para estudiantes en Bolivia.
 
-Proporcionarás orientación y pistas al estudiante, evitando dar respuestas directas. Tu objetivo es guiarlo para que descubra la solución por sí mismo. Responde siempre en español.
+Tu objetivo es guiar al estudiante para que descubra la solución por sí mismo. Responde siempre en español.
 
 Material del Curso: {{{courseMaterial}}}
 
