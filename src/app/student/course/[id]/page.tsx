@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Button } from "@/components/ui/button"
 import { Leaderboard } from "@/components/leaderboard"
 import { mockCourses, mockStudents, type Assignment, type Challenge, type Prize } from "@/lib/mock-data"
-import { FileText, Award as AwardIcon, CheckCircle2, HelpCircle, ClipboardCheck, ListTodo, Send, BrainCircuit, FileUp, Gift, Lock, CheckCircle } from "lucide-react"
+import { FileText, Award as AwardIcon, CheckCircle2, HelpCircle, ClipboardCheck, ListTodo, Send, BrainCircuit, FileUp, Gift, Lock, CheckCircle, Clock, Eye } from "lucide-react"
 import { Chatbot } from "@/components/chatbot"
 import { QuizChallengeModal } from "@/components/quiz-challenge-modal"
 import { SubmissionChallengeModal } from "@/components/submission-challenge-modal"
@@ -18,6 +18,11 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
+import { format, isPast } from "date-fns"
+import { es } from "date-fns/locale"
+import { useToast } from "@/hooks/use-toast"
+
+type QuizResults = { score: number; total: number; explanations: { question: string; explanation: string; isCorrect: boolean }[] };
 
 const assignmentIcons = {
   quiz: <HelpCircle className="h-5 w-5 text-primary" />,
@@ -33,20 +38,21 @@ const challengeIcons = {
 export default function StudentCoursePage({ params }: { params: { id: string } }) {
   const resolvedParams = React.use(params)
   const course = mockCourses.find(c => c.id === resolvedParams.id)
-  
+  const { toast } = useToast()
+
   const [assignments, setAssignments] = React.useState<Assignment[]>([]);
   const [challenges, setChallenges] = React.useState<Challenge[]>([]);
   const [prizes, setPrizes] = React.useState<Prize[]>([]);
   const [completedChallenges, setCompletedChallenges] = React.useState<Set<string>>(new Set());
   const [completedAssignments, setCompletedAssignments] = React.useState<Set<string>>(new Set());
+  const [quizSubmissions, setQuizSubmissions] = React.useState<Record<string, QuizResults>>({});
   const [claimedPrizes, setClaimedPrizes] = React.useState<Set<string>>(new Set());
   const [viewingAssignment, setViewingAssignment] = React.useState<Assignment | null>(null);
   const [assignmentSubmission, setAssignmentSubmission] = React.useState("");
   
   const quizForm = useForm<{ answers: Record<string, string> }>()
-  const [quizResults, setQuizResults] = React.useState<{ score: number; total: number; explanations: { question: string; explanation: string; isCorrect: boolean }[] } | null>(null)
+  const [quizResults, setQuizResults] = React.useState<QuizResults | null>(null)
 
-  // For this mock, we assume the logged-in student is the first one in the list.
   const currentStudent = mockStudents[0];
 
   React.useEffect(() => {
@@ -65,26 +71,32 @@ export default function StudentCoursePage({ params }: { params: { id: string } }
 
       const storedCompletedAssignments = localStorage.getItem(`completedAssignments-${course.id}`);
       if (storedCompletedAssignments) setCompletedAssignments(new Set(JSON.parse(storedCompletedAssignments)));
+      
+      const storedQuizSubmissions = localStorage.getItem(`quizSubmissions-${course.id}`);
+      if (storedQuizSubmissions) setQuizSubmissions(JSON.parse(storedQuizSubmissions));
 
       const storedClaimedPrizes = localStorage.getItem(`claimedPrizes-${course.id}-${currentStudent.id}`);
       if (storedClaimedPrizes) setClaimedPrizes(new Set(JSON.parse(storedClaimedPrizes)));
     }
   }, [course?.id, currentStudent.id]);
+  
+  const saveState = (key: string, value: any) => {
+    if (course) {
+        localStorage.setItem(`${key}-${course.id}`, JSON.stringify(value));
+    }
+  }
 
   const handleChallengeComplete = (challengeId: string) => {
     const updatedCompleted = new Set(completedChallenges).add(challengeId);
     setCompletedChallenges(updatedCompleted);
-     if (course) {
-      localStorage.setItem(`completedChallenges-${course.id}`, JSON.stringify(Array.from(updatedCompleted)));
-    }
+    saveState('completedChallenges', Array.from(updatedCompleted));
   };
 
   const handleAssignmentComplete = (assignmentId: string) => {
     const updatedCompleted = new Set(completedAssignments).add(assignmentId);
     setCompletedAssignments(updatedCompleted);
-    if (course) {
-      localStorage.setItem(`completedAssignments-${course.id}`, JSON.stringify(Array.from(updatedCompleted)));
-    }
+    saveState('completedAssignments', Array.from(updatedCompleted));
+    
     setViewingAssignment(null);
     setQuizResults(null);
     quizForm.reset();
@@ -106,18 +118,34 @@ export default function StudentCoursePage({ params }: { params: { id: string } }
     setViewingAssignment(assignment);
   }
 
+  const handleShowReview = (assignment: Assignment) => {
+    const submission = quizSubmissions[assignment.id];
+    if (submission) {
+        setQuizResults(submission);
+        setViewingAssignment(assignment);
+    }
+  }
+
   const onQuizSubmit = (data: { answers: Record<string, string> }) => {
     if (!viewingAssignment || !viewingAssignment.questions) return;
     let score = 0;
     const explanations = viewingAssignment.questions.map((q, index) => {
       const userAnswerIndex = parseInt(data.answers[String(index)], 10);
       const isCorrect = userAnswerIndex === q.correctAnswerIndex;
-      if (isCorrect) {
-        score++;
-      }
+      if (isCorrect) score++;
       return { question: q.question, explanation: q.explanation, isCorrect };
     });
-    setQuizResults({ score, total: viewingAssignment.questions.length, explanations });
+    
+    const results: QuizResults = { score, total: viewingAssignment.questions.length, explanations };
+    const updatedSubmissions = { ...quizSubmissions, [viewingAssignment.id]: results };
+    setQuizSubmissions(updatedSubmissions);
+    saveState('quizSubmissions', updatedSubmissions);
+    
+    handleAssignmentComplete(viewingAssignment.id);
+    toast({
+        title: "¡Respuestas Enviadas!",
+        description: "Podrás ver tu revisión detallada después de la fecha de entrega.",
+    });
   };
 
   if (!course) {
@@ -181,26 +209,42 @@ export default function StudentCoursePage({ params }: { params: { id: string } }
               <CardContent>
                 {assignments.length > 0 ? (
                   <ul className="space-y-3">
-                    {assignments.map(assignment => (
-                      <li key={assignment.id} className="flex items-center justify-between p-3 rounded-md border">
-                        <div className="flex items-center gap-3">
-                          {assignmentIcons[assignment.type]}
-                          <div className="flex flex-col">
-                            <span className="font-semibold">{assignment.title}</span>
-                             <span className="text-sm text-muted-foreground capitalize">{assignment.type}</span>
+                    {assignments.map(assignment => {
+                      const isCompleted = completedAssignments.has(assignment.id);
+                      const isPastDue = isPast(new Date(assignment.dueDate));
+                      const canSubmit = !isCompleted && !isPastDue;
+
+                      return (
+                        <li key={assignment.id} className="flex items-center justify-between p-3 rounded-md border">
+                          <div className="flex items-center gap-3">
+                            {assignmentIcons[assignment.type]}
+                            <div className="flex flex-col">
+                              <span className="font-semibold">{assignment.title}</span>
+                              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                <Clock className="h-3 w-3" />
+                                <span>Vence: {format(new Date(assignment.dueDate), "dd MMM, yyyy 'a las' p", { locale: es })}</span>
+                                {isPastDue && !isCompleted && <Badge variant="destructive">Vencida</Badge>}
+                              </div>
+                            </div>
                           </div>
-                        </div>
-                        <Button 
-                          size="sm" 
-                          onClick={() => handleOpenAssignment(assignment)}
-                          disabled={completedAssignments.has(assignment.id)}
-                        >
-                          {completedAssignments.has(assignment.id) 
-                            ? <><CheckCircle2 className="mr-2 h-4 w-4"/>Realizada</>
-                            : 'Realizar Tarea'}
-                        </Button>
-                      </li>
-                    ))}
+                          {isCompleted ? (
+                             assignment.type === 'quiz' ? (
+                               <Button size="sm" variant="secondary" onClick={() => handleShowReview(assignment)} disabled={!isPastDue}>
+                                  <Eye className="mr-2 h-4 w-4"/> {isPastDue ? "Ver Revisión" : "Revisión Pendiente"}
+                                </Button>
+                             ) : (
+                               <Button size="sm" disabled variant="outline">
+                                <CheckCircle2 className="mr-2 h-4 w-4"/>Realizada
+                               </Button>
+                             )
+                          ) : (
+                            <Button size="sm" onClick={() => handleOpenAssignment(assignment)} disabled={!canSubmit}>
+                              Realizar Tarea
+                            </Button>
+                          )}
+                        </li>
+                      )
+                    })}
                   </ul>
                 ) : (
                   <div className="text-center text-muted-foreground py-10">
@@ -323,7 +367,7 @@ export default function StudentCoursePage({ params }: { params: { id: string } }
         </TabsContent>
       </Tabs>
       
-      <Dialog open={!!viewingAssignment} onOpenChange={(open) => !open && setViewingAssignment(null)}>
+      <Dialog open={!!viewingAssignment} onOpenChange={(open) => {if (!open) {setViewingAssignment(null); setQuizResults(null)}}}>
         <DialogContent className="sm:max-w-2xl">
           {viewingAssignment && (
             <>
@@ -332,8 +376,8 @@ export default function StudentCoursePage({ params }: { params: { id: string } }
                 <DialogDescription>{viewingAssignment.content}</DialogDescription>
               </DialogHeader>
               
-              {viewingAssignment.type === 'quiz' && viewingAssignment.questions && (
-                quizResults ? (
+              {viewingAssignment.type === 'quiz' && (
+                quizResults ? ( // Show results view
                   <div className="py-4 space-y-4">
                     <Alert variant={quizResults.score === quizResults.total ? "default" : "destructive"}>
                       <AlertTitle>¡Resultados del Cuestionario!</AlertTitle>
@@ -350,12 +394,12 @@ export default function StudentCoursePage({ params }: { params: { id: string } }
                         ))}
                     </div>
                     <DialogFooter className="mt-4">
-                      <Button variant="secondary" onClick={() => handleAssignmentComplete(viewingAssignment!.id)}>
-                        Cerrar y Marcar como Realizada
+                      <Button variant="secondary" onClick={() => {setViewingAssignment(null); setQuizResults(null)}}>
+                        Cerrar
                       </Button>
                     </DialogFooter>
                   </div>
-                ) : (
+                ) : ( // Show quiz form
                   <Form {...quizForm}>
                     <form onSubmit={quizForm.handleSubmit(onQuizSubmit)} className="space-y-6 py-4">
                       <div className="max-h-[50vh] overflow-y-auto pr-4 space-y-6">

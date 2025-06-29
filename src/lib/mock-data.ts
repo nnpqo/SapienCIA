@@ -11,6 +11,7 @@ export interface Assignment {
   type: 'quiz' | 'survey' | 'assignment';
   content: string; // Description for quiz, content for others
   questions?: Question[];
+  dueDate: string; // ISO 8601 date string
 }
 
 export interface Challenge {
@@ -45,7 +46,7 @@ export interface Course {
 }
 
 export interface Student {
-  id: string;
+  id:string;
   name: string;
   points: number;
   avatarUrl: string;
@@ -54,7 +55,7 @@ export interface Student {
 export const mockCourses: Course[] = [
   { id: '1', title: 'Introducción a la IA', description: 'Aprende los fundamentos de la Inteligencia Artificial y sus aplicaciones en el mundo moderno.', teacher: 'Prof. Ana Torres', code: 'AI101-INV24', imageUrl: 'https://placehold.co/600x400.png', aiHint: 'inteligencia artificial', assignments: [] },
   { id: '2', title: 'Desarrollo Web Moderno', description: 'Domina React, Next.js y Tailwind CSS para construir aplicaciones web hermosas, rápidas y modernas.', teacher: 'Prof. Carlos Vega', code: 'WEB202-OTO24', imageUrl: 'https://placehold.co/600x400.png', aiHint: 'desarrollo web', assignments: [] },
-  { id: '3', title: 'Estructuras de Datos y Algoritmos', description: 'Un profundo análisis de los conceptos fundamentales de la informática, preparándote para entrevistas técnicas.', teacher: 'Prof. Isabel Rojas', code: 'CS303-PRI24', imageUrl: 'https://placehold.co/600x400.png', aiHint: 'estructuras datos', assignments: [] },
+  { id: '3', title: 'Historia de Bolivia', description: 'Un recorrido por la rica y compleja historia de Bolivia, desde sus orígenes hasta la actualidad.', teacher: 'Prof. Isabel Rojas', code: 'HIS303-PRI24', imageUrl: 'https://placehold.co/600x400.png', aiHint: 'historia bolivia', assignments: [] },
 ];
 
 export const mockStudents: Student[] = [

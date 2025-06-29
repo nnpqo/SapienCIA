@@ -5,8 +5,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Leaderboard } from "@/components/leaderboard"
-import { mockCourses, mockStudents, type Assignment, type Question, type Challenge, type Prize } from "@/lib/mock-data"
-import { FileText, PlusCircle, User, Trash2, HelpCircle, ClipboardCheck, ListTodo, Pencil, Wand2, BrainCircuit, FileUp, Gift } from "lucide-react"
+import { mockCourses, mockStudents, type Assignment, type Challenge, type Prize } from "@/lib/mock-data"
+import { FileText, PlusCircle, User, Trash2, HelpCircle, ClipboardCheck, ListTodo, Pencil, Wand2, BrainCircuit, FileUp, Gift, Calendar as CalendarIcon, Clock } from "lucide-react"
 import { AIContentGenerator } from "@/components/ai-content-generator"
 import { AIChallengeGenerator } from "@/components/ai-challenge-generator"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -16,8 +16,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { useForm } from "react-hook-form"
+import { useForm, Controller } from "react-hook-form"
 import { CreatePrizeModal } from "@/components/create-prize-modal"
+import { format } from "date-fns"
+import { es } from "date-fns/locale"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Calendar } from "@/components/ui/calendar"
+import { cn } from "@/lib/utils"
 
 const assignmentIcons = {
   quiz: <HelpCircle className="h-5 w-5 text-primary" />,
@@ -38,7 +43,7 @@ export default function TeacherCoursePage({ params }: { params: { id: string } }
   const [prizes, setPrizes] = React.useState<Prize[]>([]);
   const [assignmentToEdit, setAssignmentToEdit] = React.useState<Assignment | null>(null);
 
-  const { register, handleSubmit, setValue, getValues } = useForm<Assignment>();
+  const { register, handleSubmit, setValue, getValues, control, reset, formState: {isDirty} } = useForm<Assignment>();
 
   React.useEffect(() => {
     if (typeof window !== 'undefined' && course) {
@@ -59,13 +64,12 @@ export default function TeacherCoursePage({ params }: { params: { id: string } }
 
   React.useEffect(() => {
     if (assignmentToEdit) {
-      setValue("id", assignmentToEdit.id);
-      setValue("title", assignmentToEdit.title);
-      setValue("content", assignmentToEdit.content);
-      setValue("type", assignmentToEdit.type);
-      setValue("questions", assignmentToEdit.questions);
+      reset({
+        ...assignmentToEdit,
+        dueDate: new Date(assignmentToEdit.dueDate) as any, // The form expects a Date object
+      });
     }
-  }, [assignmentToEdit, setValue]);
+  }, [assignmentToEdit, reset]);
 
   const handlePublishAssignment = (newAssignmentData: Omit<Assignment, 'id'>) => {
     const newAssignment: Assignment = {
@@ -89,7 +93,12 @@ export default function TeacherCoursePage({ params }: { params: { id: string } }
         questions = [];
     }
     
-    const updatedAssignment = { ...data, questions };
+    // Ensure dueDate is an ISO string before saving
+    const updatedAssignment = { 
+        ...data, 
+        questions,
+        dueDate: new Date(data.dueDate).toISOString()
+    };
 
     const updatedAssignments = assignments.map(a => a.id === updatedAssignment.id ? updatedAssignment : a);
     setAssignments(updatedAssignments);
@@ -216,7 +225,10 @@ export default function TeacherCoursePage({ params }: { params: { id: string } }
                                 {assignmentIcons[assignment.type]}
                                 <div className="flex flex-col text-left">
                                   <span className="font-semibold">{assignment.title}</span>
-                                  <span className="text-sm text-muted-foreground capitalize">{assignment.type}</span>
+                                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                    <Clock className="h-3 w-3" />
+                                    <span>Vence: {format(new Date(assignment.dueDate), "dd MMM, yyyy 'a las' p", { locale: es })}</span>
+                                  </div>
                                 </div>
                               </div>
                             </div>
@@ -386,7 +398,7 @@ export default function TeacherCoursePage({ params }: { params: { id: string } }
         </TabsContent>
       </Tabs>
       
-      <Dialog open={!!assignmentToEdit} onOpenChange={(open) => !open && setAssignmentToEdit(null)}>
+      <Dialog open={!!assignmentToEdit} onOpenChange={(open) => {if (!open) setAssignmentToEdit(null)}}>
         <DialogContent className="sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle>Editar Tarea</DialogTitle>
@@ -402,13 +414,44 @@ export default function TeacherCoursePage({ params }: { params: { id: string } }
                   <Label htmlFor="edit-content">Contenido / Descripción</Label>
                   <Textarea id="edit-content" {...register("content")} />
               </div>
+              <div>
+                <Label>Fecha de Entrega</Label>
+                <Controller
+                  name="dueDate"
+                  control={control}
+                  render={({ field }) => (
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant={"outline"}
+                          className={cn(
+                            "w-full justify-start text-left font-normal",
+                            !field.value && "text-muted-foreground"
+                          )}
+                        >
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {field.value ? format(new Date(field.value), "PPP", { locale: es }) : <span>Elige una fecha</span>}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0">
+                        <Calendar
+                          mode="single"
+                          selected={field.value as any}
+                          onSelect={field.onChange}
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  )}
+                />
+              </div>
               {assignmentToEdit.type === 'quiz' && (
                   <div>
                       <Label htmlFor="edit-questions">Preguntas (formato JSON)</Label>
                       <Textarea 
                           id="edit-questions" 
                           rows={15}
-                          {...register("questions")}
+                          {...register("questions" as any)} // Registering questions as a JSON string
                           defaultValue={JSON.stringify(assignmentToEdit.questions, null, 2)}
                       />
                   </div>

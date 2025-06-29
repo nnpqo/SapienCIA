@@ -2,30 +2,43 @@
 
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription, DialogClose } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
-import { Sparkles, Upload } from "lucide-react"
+import { Sparkles, Upload, Calendar as CalendarIcon } from "lucide-react"
 import { generateEducationalContent, type GenerateEducationalContentInput, type GenerateEducationalContentOutput } from "@/ai/flows/generate-educational-content"
 import { useForm, Controller } from "react-hook-form"
 import type { Assignment } from "@/lib/mock-data"
 import { ScrollArea } from "./ui/scroll-area"
+import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover"
+import { cn } from "@/lib/utils"
+import { format } from "date-fns"
+import { Calendar } from "./ui/calendar"
+import { useToast } from "@/hooks/use-toast"
 
 interface AIContentGeneratorProps {
   courseName: string
   onPublish: (assignment: Omit<Assignment, 'id'>) => void
 }
 
+type FormData = Omit<GenerateEducationalContentInput, 'courseName'> & { dueDate: Date }
+
 export function AIContentGenerator({ courseName, onPublish }: AIContentGeneratorProps) {
   const [open, setOpen] = useState(false)
   const [generatedContent, setGeneratedContent] = useState<GenerateEducationalContentOutput | null>(null)
   const [isLoading, setIsLoading] = useState(false)
-  const { control, handleSubmit, register, formState: { errors } } = useForm<Omit<GenerateEducationalContentInput, 'courseName'>>({
+  const { toast } = useToast();
+
+  const { control, handleSubmit, register, formState: { errors }, reset } = useForm<FormData>({
     defaultValues: {
       contentType: "quiz",
       difficultyLevel: "medium",
+      topic: "",
+      length: "",
+      additionalInstructions: "",
+      dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // Default to 1 week from now
     }
   })
 
@@ -43,16 +56,28 @@ export function AIContentGenerator({ courseName, onPublish }: AIContentGenerator
     }
   }
 
-  const handlePublish = () => {
+  const handlePublish = (data: FormData) => {
     if (generatedContent && generatedContent.title !== "Error") {
       onPublish({
         title: generatedContent.title,
         type: generatedContent.contentType,
         content: generatedContent.content,
         questions: generatedContent.questions,
+        dueDate: data.dueDate.toISOString(),
+      })
+      toast({
+        title: "¡Tarea Publicada!",
+        description: "La nueva tarea está ahora disponible para tus estudiantes.",
       })
       setOpen(false)
       setGeneratedContent(null)
+      reset()
+    } else {
+        toast({
+            title: "Error",
+            description: "Primero debes generar el contenido de la tarea antes de publicarla.",
+            variant: "destructive"
+        })
     }
   }
 
@@ -67,7 +92,7 @@ export function AIContentGenerator({ courseName, onPublish }: AIContentGenerator
           <DialogDescription>Usa la IA para crear rápidamente cuestionarios, encuestas o tareas para tu curso.</DialogDescription>
         </DialogHeader>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 py-4">
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          <form id="ai-content-form" onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div>
               <Label>Tipo de Contenido</Label>
               <Controller
@@ -90,20 +115,34 @@ export function AIContentGenerator({ courseName, onPublish }: AIContentGenerator
               <Input id="topic" {...register("topic", { required: "El tema es obligatorio" })} placeholder="Ej: Introducción a Redes Neuronales" />
               {errors.topic && <p className="text-sm text-destructive mt-1">{errors.topic.message}</p>}
             </div>
-            <div>
-              <Label>Nivel de Dificultad</Label>
+             <div>
+              <Label>Fecha de Entrega</Label>
               <Controller
-                name="difficultyLevel"
+                name="dueDate"
                 control={control}
                 render={({ field }) => (
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <SelectTrigger><SelectValue placeholder="Selecciona la dificultad" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="easy">Fácil</SelectItem>
-                      <SelectItem value="medium">Medio</SelectItem>
-                      <SelectItem value="hard">Difícil</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant={"outline"}
+                        className={cn(
+                          "w-full justify-start text-left font-normal",
+                          !field.value && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {field.value ? format(field.value, "PPP") : <span>Elige una fecha</span>}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0">
+                      <Calendar
+                        mode="single"
+                        selected={field.value}
+                        onSelect={field.onChange}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
                 )}
               />
             </div>
@@ -120,7 +159,7 @@ export function AIContentGenerator({ courseName, onPublish }: AIContentGenerator
             </Button>
           </form>
 
-          <div className="bg-secondary/50 p-4 rounded-lg">
+          <div className="bg-secondary/50 p-4 rounded-lg flex flex-col">
             <h3 className="font-headline mb-4 text-center">Contenido Generado</h3>
             <ScrollArea className="bg-background rounded-md border p-4 h-[400px]">
               {isLoading ? (
@@ -157,10 +196,8 @@ export function AIContentGenerator({ courseName, onPublish }: AIContentGenerator
           </div>
         </div>
         <DialogFooter className="pt-4">
-           <DialogClose asChild>
-            <Button variant="outline">Cancelar</Button>
-          </DialogClose>
-          <Button onClick={handlePublish} disabled={!generatedContent || isLoading || generatedContent?.title === "Error"}>
+          <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
+          <Button onClick={handleSubmit(handlePublish)} disabled={!generatedContent || isLoading || generatedContent?.title === "Error"}>
             <Upload className="mr-2 h-4 w-4" />
             Publicar
           </Button>
