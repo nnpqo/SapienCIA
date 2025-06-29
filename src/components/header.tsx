@@ -2,6 +2,12 @@ import Link from 'next/link';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { GraduationCap, LogOut, Trophy } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 interface HeaderProps {
   user: {
@@ -29,22 +35,30 @@ export function Header({ user, role }: HeaderProps) {
               <span className="text-sm text-muted-foreground font-body hidden sm:inline">puntos</span>
             </div>
           )}
-           <div className="flex items-center gap-3">
-              <Avatar>
-                  <AvatarImage src={user.avatarUrl} alt={`Avatar de ${user.name}`} />
-                  <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
-              </Avatar>
-              <div className="hidden md:flex flex-col overflow-hidden">
-                  <span className="text-sm font-semibold truncate">{user.name}</span>
-                  <span className="text-xs text-muted-foreground truncate">{user.email}</span>
-              </div>
-          </div>
-          <Link href="/">
-            <Button variant="outline">
-              <LogOut className="md:mr-2" />
-              <span className="hidden md:inline">Cerrar Sesión</span>
-            </Button>
-          </Link>
+           
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="flex items-center justify-start gap-3 h-auto p-1 rounded-md">
+                  <Avatar>
+                      <AvatarImage src={user.avatarUrl} alt={`Avatar de ${user.name}`} />
+                      <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
+                  </Avatar>
+                  <div className="hidden md:flex flex-col overflow-hidden text-left">
+                      <span className="text-sm font-semibold truncate">{user.name}</span>
+                      <span className="text-xs text-muted-foreground truncate">{user.email}</span>
+                  </div>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <Link href="/">
+                <DropdownMenuItem className="cursor-pointer">
+                  <LogOut className="mr-2 h-4 w-4" />
+                  <span>Cerrar Sesión</span>
+                </DropdownMenuItem>
+              </Link>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
         </div>
       </div>
     </header>
