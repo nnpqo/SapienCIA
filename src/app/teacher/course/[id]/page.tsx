@@ -588,8 +588,14 @@ export default function TeacherCoursePage({ params }: { params: { id: string } }
         </DialogContent>
       </Dialog>
       <Dialog open={!!viewingImage} onOpenChange={(open) => !open && setViewingImage(null)}>
-        <DialogContent className="max-w-4xl p-2">
-            {viewingImage && <Image src={viewingImage} alt="Entrega de estudiante" width={1200} height={800} className="rounded-md" />}
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>Revisión de Entrega</DialogTitle>
+            <DialogDescription>
+              Esta es la imagen que el estudiante ha entregado para el desafío.
+            </DialogDescription>
+          </DialogHeader>
+          {viewingImage && <Image src={viewingImage} alt="Entrega de estudiante" width={1200} height={800} className="rounded-md mt-4" />}
         </DialogContent>
       </Dialog>
     </div>
