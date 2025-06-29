@@ -6,7 +6,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { MessageSquare, Mic, Send, Bot, User } from "lucide-react"
+import { Mic, Send, Bot, User } from "lucide-react"
 import { studentChatbotAssistance } from "@/ai/flows/student-chatbot-assistance"
 import { cn } from "@/lib/utils"
 
@@ -19,13 +19,53 @@ interface ChatbotProps {
   courseMaterial: string;
 }
 
+declare global {
+  interface Window {
+    SpeechRecognition: any;
+    webkitSpeechRecognition: any;
+  }
+}
+
 export function Chatbot({ courseMaterial }: ChatbotProps) {
   const [messages, setMessages] = useState<Message[]>([
-    { text: "¡Hola! Soy tu asistente de IA. Estoy aquí para guiarte, no para darte respuestas directas. ¿Cómo puedo ayudarte hoy con tu curso?", isUser: false }
+    { text: "¡Hola! Soy tu asistente de IA. ¿Cómo puedo ayudarte con tu curso?", isUser: false }
   ])
   const [input, setInput] = useState("")
   const [isLoading, setIsLoading] = useState(false)
+  const [isListening, setIsListening] = useState(false)
   const scrollAreaRef = useRef<HTMLDivElement>(null)
+  const recognitionRef = useRef<any>(null)
+
+  useEffect(() => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
+    if (SpeechRecognition) {
+      const recognition = new SpeechRecognition()
+      recognition.continuous = false
+      recognition.lang = 'es-ES'
+      recognition.interimResults = false
+
+      recognition.onstart = () => {
+        setIsListening(true)
+      }
+
+      recognition.onend = () => {
+        setIsListening(false)
+      }
+
+      recognition.onerror = (event: any) => {
+        console.error("Speech recognition error", event.error)
+        setIsListening(false)
+      }
+
+      recognition.onresult = (event: any) => {
+        const transcript = event.results[event.results.length - 1][0].transcript.trim()
+        setInput(transcript)
+      }
+
+      recognitionRef.current = recognition
+    }
+  }, [])
+
 
   useEffect(() => {
     if (scrollAreaRef.current) {
@@ -54,12 +94,23 @@ export function Chatbot({ courseMaterial }: ChatbotProps) {
       setIsLoading(false)
     }
   }
+  
+  const handleMicClick = () => {
+    if (!recognitionRef.current) return;
+
+    if (isListening) {
+      recognitionRef.current.stop();
+    } else {
+      setInput(''); // Clear input before starting
+      recognitionRef.current.start();
+    }
+  };
 
   return (
     <Sheet>
       <SheetTrigger asChild>
-        <Button className="fixed bottom-8 right-8 rounded-full w-16 h-16 shadow-lg animate-bounce hover:animate-none transition-transform duration-300 hover:scale-110">
-          <MessageSquare size={28} />
+        <Button className="fixed bottom-8 right-8 rounded-full w-16 h-16 shadow-lg transition-transform duration-300 hover:scale-110">
+          <Bot size={28} />
         </Button>
       </SheetTrigger>
       <SheetContent className="flex flex-col p-0">
@@ -102,11 +153,13 @@ export function Chatbot({ courseMaterial }: ChatbotProps) {
             value={input} 
             onChange={(e) => setInput(e.target.value)} 
             onKeyPress={(e) => e.key === 'Enter' && handleSend()}
-            placeholder="Haz una pregunta..."
+            placeholder={isListening ? "Escuchando..." : "Haz una pregunta..."}
             disabled={isLoading}
           />
-          <Button variant="ghost" size="icon" disabled={isLoading}><Mic /></Button>
-          <Button onClick={handleSend} disabled={isLoading}><Send /></Button>
+          <Button variant="ghost" size="icon" onClick={handleMicClick} disabled={isLoading || !recognitionRef.current}>
+            <Mic className={cn(isListening && "text-destructive")} />
+          </Button>
+          <Button onClick={handleSend} disabled={isLoading || !input.trim()}><Send /></Button>
         </div>
       </SheetContent>
     </Sheet>
