@@ -2,24 +2,26 @@
 
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription, DialogClose } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
-import { Sparkles } from "lucide-react"
+import { Sparkles, Upload } from "lucide-react"
 import { generateEducationalContent, type GenerateEducationalContentInput } from "@/ai/flows/generate-educational-content"
 import { useForm, Controller } from "react-hook-form"
+import type { Assignment } from "@/lib/mock-data"
 
 interface AIContentGeneratorProps {
   courseName: string
+  onPublish: (assignment: Omit<Assignment, 'id'>) => void
 }
 
-export function AIContentGenerator({ courseName }: AIContentGeneratorProps) {
+export function AIContentGenerator({ courseName, onPublish }: AIContentGeneratorProps) {
   const [open, setOpen] = useState(false)
   const [generatedContent, setGeneratedContent] = useState<{ title: string; content: string } | null>(null)
   const [isLoading, setIsLoading] = useState(false)
-  const { control, handleSubmit, register, formState: { errors } } = useForm<Omit<GenerateEducationalContentInput, 'courseName'>>({
+  const { control, handleSubmit, register, formState: { errors }, getValues } = useForm<Omit<GenerateEducationalContentInput, 'courseName'>>({
     defaultValues: {
       contentType: "quiz",
       difficultyLevel: "medium",
@@ -40,10 +42,23 @@ export function AIContentGenerator({ courseName }: AIContentGeneratorProps) {
     }
   }
 
+  const handlePublish = () => {
+    if (generatedContent && generatedContent.title !== "Error") {
+      const contentType = getValues("contentType")
+      onPublish({
+        title: generatedContent.title,
+        content: generatedContent.content,
+        type: contentType,
+      })
+      setOpen(false)
+      setGeneratedContent(null)
+    }
+  }
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button size="sm"><Sparkles className="mr-2 h-4 w-4" /> Generar con IA</Button>
+        <Button size="sm"><Sparkles className="mr-2 h-4 w-4" /> Generar Tarea con IA</Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[625px]">
         <DialogHeader>
@@ -122,8 +137,14 @@ export function AIContentGenerator({ courseName }: AIContentGeneratorProps) {
                 </div>
               )}
             </div>
-            <DialogFooter className="mt-4">
-                <Button variant="outline" onClick={() => setOpen(false)}>Cerrar</Button>
+            <DialogFooter className="mt-4 gap-2 sm:justify-end">
+              <DialogClose asChild>
+                <Button variant="outline">Cancelar</Button>
+              </DialogClose>
+              <Button onClick={handlePublish} disabled={!generatedContent || isLoading || generatedContent?.title === "Error"}>
+                <Upload className="mr-2 h-4 w-4" />
+                Publicar
+              </Button>
             </DialogFooter>
           </div>
         </div>

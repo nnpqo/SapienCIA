@@ -5,14 +5,45 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Leaderboard } from "@/components/leaderboard"
-import { mockCourses } from "@/lib/mock-data"
-import { FileText, Award as AwardIcon, CheckCircle2 } from "lucide-react"
+import { mockCourses, type Assignment } from "@/lib/mock-data"
+import { FileText, Award as AwardIcon, CheckCircle2, HelpCircle, ClipboardCheck, ListTodo } from "lucide-react"
 import { Chatbot } from "@/components/chatbot"
 import { QuizChallengeModal } from "@/components/quiz-challenge-modal"
+
+const assignmentIcons = {
+  quiz: <HelpCircle className="h-5 w-5 text-primary" />,
+  survey: <ListTodo className="h-5 w-5 text-primary" />,
+  assignment: <ClipboardCheck className="h-5 w-5 text-primary" />,
+};
+
 
 export default function StudentCoursePage({ params }: { params: { id: string } }) {
   const resolvedParams = React.use(params)
   const course = mockCourses.find(c => c.id === resolvedParams.id)
+  const [assignments, setAssignments] = React.useState<Assignment[]>([]);
+  const [completedChallenges, setCompletedChallenges] = React.useState<Set<string>>(new Set());
+
+  React.useEffect(() => {
+    if (typeof window !== 'undefined' && course) {
+      const storedAssignments = localStorage.getItem(`assignments-${course.id}`);
+      if (storedAssignments) {
+        setAssignments(JSON.parse(storedAssignments));
+      }
+      
+      const storedCompleted = localStorage.getItem(`completedChallenges-${course.id}`);
+      if (storedCompleted) {
+        setCompletedChallenges(new Set(JSON.parse(storedCompleted)));
+      }
+    }
+  }, [course?.id]);
+
+  const handleChallengeComplete = (challengeId: string) => {
+    const updatedCompleted = new Set(completedChallenges).add(challengeId);
+    setCompletedChallenges(updatedCompleted);
+     if (course) {
+      localStorage.setItem(`completedChallenges-${course.id}`, JSON.stringify(Array.from(updatedCompleted)));
+    }
+  };
 
   if (!course) {
     return (
@@ -74,10 +105,30 @@ export default function StudentCoursePage({ params }: { params: { id: string } }
         <TabsContent value="assignments">
           <Card>
              <CardHeader>
-                <CardTitle>Tareas</CardTitle>
+                <CardTitle>Tareas Pendientes</CardTitle>
+                <CardDescription>Completa las siguientes tareas para avanzar en el curso.</CardDescription>
               </CardHeader>
-              <CardContent className="text-center text-muted-foreground py-10">
-                <p>Aún no se han publicado tareas. ¡Vuelve pronto!</p>
+              <CardContent>
+                {assignments.length > 0 ? (
+                  <ul className="space-y-3">
+                    {assignments.map(assignment => (
+                      <li key={assignment.id} className="flex items-center justify-between p-3 rounded-md border">
+                        <div className="flex items-center gap-3">
+                          {assignmentIcons[assignment.type]}
+                          <div className="flex flex-col">
+                            <span className="font-semibold">{assignment.title}</span>
+                             <span className="text-sm text-muted-foreground capitalize">{assignment.type}</span>
+                          </div>
+                        </div>
+                        <Button size="sm">Realizar Tarea</Button>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <div className="text-center text-muted-foreground py-10">
+                    <p>¡Felicidades! No tienes tareas pendientes por ahora.</p>
+                  </div>
+                )}
               </CardContent>
           </Card>
         </TabsContent>
@@ -98,7 +149,7 @@ export default function StudentCoursePage({ params }: { params: { id: string } }
                           <p className="font-bold text-primary">+100 Puntos</p>
                           <Button size="sm" className="mt-1" variant="outline" disabled>
                             <CheckCircle2 className="mr-2 h-4 w-4 text-green-500" />
-                            Reclamado
+                            Completado
                           </Button>
                       </div>
                   </div>
@@ -109,9 +160,16 @@ export default function StudentCoursePage({ params }: { params: { id: string } }
                       </div>
                        <div className="text-right shrink-0">
                           <p className="font-bold text-primary">+150 Puntos</p>
-                          <QuizChallengeModal topic={course.title}>
-                             <Button size="sm" className="mt-1">Iniciar Desafío</Button>
-                          </QuizChallengeModal>
+                           {completedChallenges.has('quiz-genius') ? (
+                              <Button size="sm" className="mt-1" variant="outline" disabled>
+                                  <CheckCircle2 className="mr-2 h-4 w-4 text-green-500" />
+                                  Completado
+                              </Button>
+                          ) : (
+                              <QuizChallengeModal topic={course.title} onChallengeComplete={() => handleChallengeComplete('quiz-genius')}>
+                                  <Button size="sm" className="mt-1">Iniciar Desafío</Button>
+                              </QuizChallengeModal>
+                          )}
                       </div>
                   </div>
               </CardContent>

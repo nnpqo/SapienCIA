@@ -1,3 +1,10 @@
+export interface Assignment {
+  id: string;
+  title: string;
+  content: string;
+  type: 'quiz' | 'survey' | 'assignment';
+}
+
 export interface Course {
   id: string;
   title: string;
@@ -6,6 +13,7 @@ export interface Course {
   code: string;
   imageUrl: string;
   aiHint: string;
+  assignments: Assignment[];
 }
 
 export interface Student {
@@ -16,9 +24,9 @@ export interface Student {
 }
 
 export const mockCourses: Course[] = [
-  { id: '1', title: 'Introducción a la IA', description: 'Aprende los fundamentos de la Inteligencia Artificial y sus aplicaciones en el mundo moderno.', teacher: 'Prof. Ana Torres', code: 'AI101-INV24', imageUrl: 'https://placehold.co/600x400.png', aiHint: 'inteligencia artificial' },
-  { id: '2', title: 'Desarrollo Web Moderno', description: 'Domina React, Next.js y Tailwind CSS para construir aplicaciones web hermosas, rápidas y modernas.', teacher: 'Prof. Carlos Vega', code: 'WEB202-OTO24', imageUrl: 'https://placehold.co/600x400.png', aiHint: 'desarrollo web' },
-  { id: '3', title: 'Estructuras de Datos y Algoritmos', description: 'Un profundo análisis de los conceptos fundamentales de la informática, preparándote para entrevistas técnicas.', teacher: 'Prof. Isabel Rojas', code: 'CS303-PRI24', imageUrl: 'https://placehold.co/600x400.png', aiHint: 'estructuras datos' },
+  { id: '1', title: 'Introducción a la IA', description: 'Aprende los fundamentos de la Inteligencia Artificial y sus aplicaciones en el mundo moderno.', teacher: 'Prof. Ana Torres', code: 'AI101-INV24', imageUrl: 'https://placehold.co/600x400.png', aiHint: 'inteligencia artificial', assignments: [] },
+  { id: '2', title: 'Desarrollo Web Moderno', description: 'Domina React, Next.js y Tailwind CSS para construir aplicaciones web hermosas, rápidas y modernas.', teacher: 'Prof. Carlos Vega', code: 'WEB202-OTO24', imageUrl: 'https://placehold.co/600x400.png', aiHint: 'desarrollo web', assignments: [] },
+  { id: '3', title: 'Estructuras de Datos y Algoritmos', description: 'Un profundo análisis de los conceptos fundamentales de la informática, preparándote para entrevistas técnicas.', teacher: 'Prof. Isabel Rojas', code: 'CS303-PRI24', imageUrl: 'https://placehold.co/600x400.png', aiHint: 'estructuras datos', assignments: [] },
 ];
 
 export const mockStudents: Student[] = [

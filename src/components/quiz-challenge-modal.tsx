@@ -10,7 +10,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { generateQuizChallenge, type GenerateQuizChallengeOutput } from "@/ai/flows/generate-quiz-challenge"
-import { Loader2, PartyPopper, Frown } from "lucide-react"
+import { Loader2, PartyPopper, Frown, CheckCircle2 } from "lucide-react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Separator } from "@/components/ui/separator"
 import { cn } from "@/lib/utils"
@@ -18,13 +18,14 @@ import { cn } from "@/lib/utils"
 interface QuizChallengeModalProps {
   topic: string
   children: React.ReactNode
+  onChallengeComplete: () => void
 }
 
 const FormSchema = z.object({
   answers: z.record(z.string()),
 })
 
-export function QuizChallengeModal({ topic, children }: QuizChallengeModalProps) {
+export function QuizChallengeModal({ topic, children, onChallengeComplete }: QuizChallengeModalProps) {
   const [open, setOpen] = useState(false)
   const [quiz, setQuiz] = useState<GenerateQuizChallengeOutput | null>(null)
   const [isLoading, setIsLoading] = useState(false)
@@ -54,9 +55,10 @@ export function QuizChallengeModal({ topic, children }: QuizChallengeModalProps)
       }
     }
     if (!isOpen) {
-      // Reset state when closing
-      setQuiz(null)
-      setResults(null)
+      // Reset state when closing, unless results are shown
+      if (!results) {
+        setQuiz(null)
+      }
     }
   }
 
@@ -71,6 +73,10 @@ export function QuizChallengeModal({ topic, children }: QuizChallengeModalProps)
       }
       return { question: q.question, explanation: q.explanation, isCorrect }
     })
+    const isSuccess = score / quiz.questions.length >= 0.8;
+    if (isSuccess) {
+        onChallengeComplete()
+    }
     setResults({ score, total: quiz.questions.length, explanations })
   }
 
@@ -90,10 +96,11 @@ export function QuizChallengeModal({ topic, children }: QuizChallengeModalProps)
         <div className="space-y-4">
             <div className="flex flex-col items-center justify-center p-6 bg-secondary/50 rounded-lg">
                 {isSuccess ? <PartyPopper className="h-16 w-16 text-green-500" /> : <Frown className="h-16 w-16 text-destructive" />}
-                <h3 className="text-2xl font-bold mt-4">{isSuccess ? "¡Felicidades!" : "¡Sigue intentando!"}</h3>
+                <h3 className="text-2xl font-bold mt-4">{isSuccess ? "¡Desafío Completado!" : "¡Sigue intentando!"}</h3>
                 <p className="text-lg text-muted-foreground mt-2">
                     Obtuviste {results.score} de {results.total} respuestas correctas.
                 </p>
+                {isSuccess && <p className="text-sm text-green-600 font-semibold mt-1">+150 Puntos Obtenidos</p>}
             </div>
             <div className="max-h-[300px] overflow-y-auto space-y-4 pr-2">
                 {results.explanations.map((item, index) => (
@@ -159,6 +166,13 @@ export function QuizChallengeModal({ topic, children }: QuizChallengeModalProps)
     )
   }
 
+  const resetAndClose = () => {
+    setQuiz(null);
+    setResults(null);
+    form.reset();
+    setOpen(false);
+  }
+
   return (
     <Dialog open={open} onOpenChange={handleOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
@@ -169,9 +183,7 @@ export function QuizChallengeModal({ topic, children }: QuizChallengeModalProps)
         {renderContent()}
          {results && (
             <DialogFooter>
-                <DialogClose asChild>
-                    <Button variant="outline">Cerrar</Button>
-                </DialogClose>
+                <Button variant="outline" onClick={resetAndClose}>Cerrar</Button>
             </DialogFooter>
         )}
       </DialogContent>
