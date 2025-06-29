@@ -5,7 +5,7 @@ import type { Student } from "@/lib/mock-data"
 import { Award, Medal, Trophy } from "lucide-react"
 
 export function Leaderboard() {
-  const students: Student[] = mockStudents;
+  const students: Student[] = mockStudents.slice(0, 5);
 
   const getRankIcon = (rank: number) => {
     if (rank === 0) return <Trophy className="text-yellow-500 w-6 h-6" />;
