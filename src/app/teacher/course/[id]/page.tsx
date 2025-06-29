@@ -421,34 +421,72 @@ export default function TeacherCoursePage({ params }: { params: { id: string } }
               </div>
               <div>
                 <Label>Fecha de Entrega</Label>
-                <Controller
-                  name="dueDate"
-                  control={control}
-                  render={({ field }) => (
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant={"outline"}
-                          className={cn(
-                            "w-full justify-start text-left font-normal",
-                            !field.value && "text-muted-foreground"
-                          )}
-                        >
-                          <CalendarIcon className="mr-2 h-4 w-4" />
-                          {field.value ? format(new Date(field.value), "PPP", { locale: es }) : <span>Elige una fecha</span>}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0">
-                        <Calendar
-                          mode="single"
-                          selected={field.value as any}
-                          onSelect={field.onChange}
-                          initialFocus
-                        />
-                      </PopoverContent>
-                    </Popover>
-                  )}
-                />
+                 <Controller
+                    name="dueDate"
+                    control={control}
+                    render={({ field }) => {
+                        const dateValue = field.value ? new Date(field.value) : null;
+                        const timeValue = dateValue ? format(dateValue, 'HH:mm') : '';
+
+                        const handleDateSelect = (date: Date | undefined) => {
+                            if (!date) {
+                                field.onChange(undefined);
+                                return;
+                            }
+                            const currentValue = field.value ? new Date(field.value) : new Date();
+                            const newDate = new Date(date);
+                            newDate.setHours(currentValue.getHours());
+                            newDate.setMinutes(currentValue.getMinutes());
+                            field.onChange(newDate);
+                        };
+
+                        const handleTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+                            const time = e.target.value;
+                            if (!time) return;
+
+                            const [hours, minutes] = time.split(':').map(Number);
+                            const currentValue = field.value ? new Date(field.value) : new Date();
+                            const newDate = new Date(currentValue);
+                            newDate.setHours(hours);
+                            newDate.setMinutes(minutes);
+                            field.onChange(newDate);
+                        };
+
+                        return (
+                        <Popover>
+                            <PopoverTrigger asChild>
+                            <Button
+                                variant={"outline"}
+                                className={cn(
+                                "w-full justify-start text-left font-normal",
+                                !dateValue && "text-muted-foreground"
+                                )}
+                            >
+                                <CalendarIcon className="mr-2 h-4 w-4" />
+                                {dateValue ? format(dateValue, "dd MMM, yyyy 'a las' p", { locale: es }) : <span>Elige una fecha y hora</span>}
+                            </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0">
+                            <Calendar
+                                mode="single"
+                                selected={dateValue}
+                                onSelect={handleDateSelect}
+                                initialFocus
+                            />
+                            <div className="p-3 border-t border-border">
+                                <Label className="text-sm">Hora de entrega</Label>
+                                <Input
+                                    type="time"
+                                    className="mt-2"
+                                    value={timeValue}
+                                    onChange={handleTimeChange}
+                                />
+                            </div>
+                            </PopoverContent>
+                        </Popover>
+                        );
+                    }}
+                 />
               </div>
               {assignmentToEdit.type === 'quiz' && (
                   <div>
