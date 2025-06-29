@@ -23,9 +23,18 @@ const GenerateEducationalContentInputSchema = z.object({
 
 export type GenerateEducationalContentInput = z.infer<typeof GenerateEducationalContentInputSchema>;
 
+const QuestionSchema = z.object({
+    question: z.string().describe('La pregunta del cuestionario.'),
+    options: z.array(z.string()).describe('Una lista de posibles respuestas.'),
+    correctAnswerIndex: z.number().describe('El índice de la respuesta correcta en el array de opciones.'),
+    explanation: z.string().describe('Una breve explicación de por qué la respuesta es correcta.')
+});
+
 const GenerateEducationalContentOutputSchema = z.object({
   title: z.string().describe('El título del contenido educativo generado.'),
-  content: z.string().describe('El contenido educativo generado en un formato adecuado (por ejemplo, preguntas, instrucciones).'),
+  contentType: z.enum(['quiz', 'survey', 'assignment']).describe('El tipo de contenido generado.'),
+  content: z.string().describe('El contenido para una tarea o encuesta, o una descripción general si es un cuestionario.'),
+  questions: z.array(QuestionSchema).optional().describe('Una lista de preguntas si el tipo de contenido es "quiz".'),
 });
 
 export type GenerateEducationalContentOutput = z.infer<typeof GenerateEducationalContentOutputSchema>;
@@ -49,10 +58,12 @@ const generateEducationalContentPrompt = ai.definePrompt({
   Longitud: {{{length}}}
   Instrucciones Adicionales: {{{additionalInstructions}}}
 
-  Genera el contenido educativo y devuélvelo en un formato adecuado para su uso inmediato.
-  Asegúrate de que el contenido sea pedagógicamente sólido y se alinee con el nivel de dificultad especificado y cualquier instrucción adicional proporcionada.
-  Devuelve el título del contenido y el contenido mismo.
-  Responde siempre en español.
+  Genera el contenido educativo.
+  - Si el tipo de contenido es 'quiz', genera una lista de preguntas. Cada pregunta debe tener opciones de respuesta, el índice de la respuesta correcta y una explicación. El campo 'content' debe ser una breve descripción del cuestionario.
+  - Si es 'assignment' o 'survey', genera un texto detallado para el campo 'content'.
+  - Responde siempre en español.
+  - Asegúrate de que el contenido sea pedagógicamente sólido y se alinee con el nivel de dificultad especificado.
+  - Devuelve el título, el tipo de contenido y el contenido mismo en el formato de salida requerido.
   `,
 });
 

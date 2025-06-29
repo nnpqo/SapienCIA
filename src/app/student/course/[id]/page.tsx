@@ -6,9 +6,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Leaderboard } from "@/components/leaderboard"
 import { mockCourses, type Assignment } from "@/lib/mock-data"
-import { FileText, Award as AwardIcon, CheckCircle2, HelpCircle, ClipboardCheck, ListTodo } from "lucide-react"
+import { FileText, Award as AwardIcon, CheckCircle2, HelpCircle, ClipboardCheck, ListTodo, Send } from "lucide-react"
 import { Chatbot } from "@/components/chatbot"
 import { QuizChallengeModal } from "@/components/quiz-challenge-modal"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
+import { useForm } from "react-hook-form"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { Label } from "@/components/ui/label"
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert"
+import { Textarea } from "@/components/ui/textarea"
 
 const assignmentIcons = {
   quiz: <HelpCircle className="h-5 w-5 text-primary" />,
@@ -16,12 +23,18 @@ const assignmentIcons = {
   assignment: <ClipboardCheck className="h-5 w-5 text-primary" />,
 };
 
-
 export default function StudentCoursePage({ params }: { params: { id: string } }) {
   const resolvedParams = React.use(params)
   const course = mockCourses.find(c => c.id === resolvedParams.id)
+  
   const [assignments, setAssignments] = React.useState<Assignment[]>([]);
   const [completedChallenges, setCompletedChallenges] = React.useState<Set<string>>(new Set());
+  const [completedAssignments, setCompletedAssignments] = React.useState<Set<string>>(new Set());
+  const [viewingAssignment, setViewingAssignment] = React.useState<Assignment | null>(null);
+  
+  const quizForm = useForm<{ answers: Record<string, string> }>()
+  const [quizResults, setQuizResults] = React.useState<{ score: number, total: number } | null>(null)
+
 
   React.useEffect(() => {
     if (typeof window !== 'undefined' && course) {
@@ -30,9 +43,14 @@ export default function StudentCoursePage({ params }: { params: { id: string } }
         setAssignments(JSON.parse(storedAssignments));
       }
       
-      const storedCompleted = localStorage.getItem(`completedChallenges-${course.id}`);
-      if (storedCompleted) {
-        setCompletedChallenges(new Set(JSON.parse(storedCompleted)));
+      const storedCompletedChallenges = localStorage.getItem(`completedChallenges-${course.id}`);
+      if (storedCompletedChallenges) {
+        setCompletedChallenges(new Set(JSON.parse(storedCompletedChallenges)));
+      }
+
+      const storedCompletedAssignments = localStorage.getItem(`completedAssignments-${course.id}`);
+      if (storedCompletedAssignments) {
+        setCompletedAssignments(new Set(JSON.parse(storedCompletedAssignments)));
       }
     }
   }, [course?.id]);
@@ -43,6 +61,35 @@ export default function StudentCoursePage({ params }: { params: { id: string } }
      if (course) {
       localStorage.setItem(`completedChallenges-${course.id}`, JSON.stringify(Array.from(updatedCompleted)));
     }
+  };
+
+  const handleAssignmentComplete = (assignmentId: string) => {
+    const updatedCompleted = new Set(completedAssignments).add(assignmentId);
+    setCompletedAssignments(updatedCompleted);
+    if (course) {
+      localStorage.setItem(`completedAssignments-${course.id}`, JSON.stringify(Array.from(updatedCompleted)));
+    }
+    setViewingAssignment(null);
+    setQuizResults(null);
+    quizForm.reset();
+  };
+
+  const handleOpenAssignment = (assignment: Assignment) => {
+    setQuizResults(null);
+    quizForm.reset();
+    setViewingAssignment(assignment);
+  }
+
+  const onQuizSubmit = (data: { answers: Record<string, string> }) => {
+    if (!viewingAssignment || !viewingAssignment.questions) return;
+    let score = 0;
+    viewingAssignment.questions.forEach((q, index) => {
+      const userAnswerIndex = parseInt(data.answers[String(index)], 10);
+      if (userAnswerIndex === q.correctAnswerIndex) {
+        score++;
+      }
+    });
+    setQuizResults({ score, total: viewingAssignment.questions.length });
   };
 
   if (!course) {
@@ -68,7 +115,7 @@ export default function StudentCoursePage({ params }: { params: { id: string } }
         <p className="text-lg text-muted-foreground font-body mt-2">{course.description}</p>
       </div>
 
-      <Tabs defaultValue="materials" className="w-full">
+      <Tabs defaultValue="assignments" className="w-full">
         <TabsList className="mb-6 grid w-full grid-cols-2 md:grid-cols-4">
           <TabsTrigger value="materials">Materiales</TabsTrigger>
           <TabsTrigger value="assignments">Tareas</TabsTrigger>
@@ -120,7 +167,15 @@ export default function StudentCoursePage({ params }: { params: { id: string } }
                              <span className="text-sm text-muted-foreground capitalize">{assignment.type}</span>
                           </div>
                         </div>
-                        <Button size="sm">Realizar Tarea</Button>
+                        <Button 
+                          size="sm" 
+                          onClick={() => handleOpenAssignment(assignment)}
+                          disabled={completedAssignments.has(assignment.id)}
+                        >
+                          {completedAssignments.has(assignment.id) 
+                            ? <><CheckCircle2 className="mr-2 h-4 w-4"/>Realizada</>
+                            : 'Realizar Tarea'}
+                        </Button>
                       </li>
                     ))}
                   </ul>
@@ -180,6 +235,99 @@ export default function StudentCoursePage({ params }: { params: { id: string } }
           <Leaderboard />
         </TabsContent>
       </Tabs>
+      
+      <Dialog open={!!viewingAssignment} onOpenChange={(open) => !open && handleAssignmentComplete(viewingAssignment?.id || '')}>
+        <DialogContent className="sm:max-w-2xl">
+          {viewingAssignment && (
+            <>
+              <DialogHeader>
+                <DialogTitle className="font-headline text-2xl">{viewingAssignment.title}</DialogTitle>
+                <DialogDescription>{viewingAssignment.content}</DialogDescription>
+              </DialogHeader>
+              
+              {viewingAssignment.type === 'quiz' && viewingAssignment.questions && (
+                quizResults ? (
+                  <div className="py-4">
+                    <Alert variant={quizResults.score === quizResults.total ? "default" : "destructive"}>
+                      <AlertTitle>¡Resultados del Cuestionario!</AlertTitle>
+                      <AlertDescription>
+                        Obtuviste {quizResults.score} de {quizResults.total} respuestas correctas.
+                      </AlertDescription>
+                    </Alert>
+                  </div>
+                ) : (
+                  <Form {...quizForm}>
+                    <form onSubmit={quizForm.handleSubmit(onQuizSubmit)} className="space-y-6 py-4">
+                      <div className="max-h-[50vh] overflow-y-auto pr-4 space-y-6">
+                        {viewingAssignment.questions.map((q, index) => (
+                           <FormField
+                            key={index}
+                            control={quizForm.control}
+                            name={`answers.${index}`}
+                            rules={{ required: "Por favor, selecciona una respuesta."}}
+                            render={({ field }) => (
+                              <FormItem className="space-y-3">
+                                <FormLabel className="font-bold text-base">{index + 1}. {q.question}</FormLabel>
+                                <FormControl>
+                                  <RadioGroup
+                                    onValueChange={field.onChange}
+                                    defaultValue={field.value}
+                                    className="flex flex-col space-y-1"
+                                  >
+                                    {q.options.map((option, optionIndex) => (
+                                      <FormItem key={optionIndex} className="flex items-center space-x-3 space-y-0">
+                                        <FormControl>
+                                          <RadioGroupItem value={String(optionIndex)} />
+                                        </FormControl>
+                                        <FormLabel className="font-normal">{option}</FormLabel>
+                                      </FormItem>
+                                    ))}
+                                  </RadioGroup>
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        ))}
+                      </div>
+                       <DialogFooter>
+                        <Button type="submit">Enviar Respuestas</Button>
+                      </DialogFooter>
+                    </form>
+                  </Form>
+                )
+              )}
+
+              {viewingAssignment.type === 'assignment' && (
+                <div className="py-4 space-y-4">
+                    <Textarea placeholder="Escribe tu respuesta aquí..." rows={10}/>
+                    <Button onClick={() => handleAssignmentComplete(viewingAssignment.id)}>
+                        <Send className="mr-2 h-4 w-4"/> Enviar Tarea
+                    </Button>
+                </div>
+              )}
+
+              {viewingAssignment.type === 'survey' && (
+                <div className="py-4 space-y-4">
+                     <p className="text-sm text-muted-foreground">Responde las siguientes preguntas:</p>
+                     <Textarea placeholder="Tus comentarios son importantes..." rows={10}/>
+                    <Button onClick={() => handleAssignmentComplete(viewingAssignment.id)}>
+                        Enviar Encuesta
+                    </Button>
+                </div>
+              )}
+            </>
+          )}
+          {!quizResults && (viewingAssignment?.type === 'assignment' || viewingAssignment?.type === 'survey') ? null : (
+             <DialogFooter className="mt-4">
+              <Button variant="secondary" onClick={() => handleAssignmentComplete(viewingAssignment!.id)}>
+                {quizResults ? "Cerrar" : "Marcar como completado"}
+              </Button>
+            </DialogFooter>
+          )}
+        </DialogContent>
+      </Dialog>
+
 
       <Chatbot courseMaterial={courseMaterialForBot} />
     </div>

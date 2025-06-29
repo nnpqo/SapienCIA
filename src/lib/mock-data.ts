@@ -1,8 +1,16 @@
+export interface Question {
+  question: string;
+  options: string[];
+  correctAnswerIndex: number;
+  explanation: string;
+}
+
 export interface Assignment {
   id: string;
   title: string;
-  content: string;
   type: 'quiz' | 'survey' | 'assignment';
+  content: string; // Description for quiz, content for others
+  questions?: Question[];
 }
 
 export interface Course {
