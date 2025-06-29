@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Button } from "@/components/ui/button"
 import { Leaderboard } from "@/components/leaderboard"
 import { mockCourses, mockStudents, type Assignment, type Challenge, type Prize, type ChallengeSubmission, type Student } from "@/lib/mock-data"
-import { FileText, PlusCircle, User, Trash2, HelpCircle, ClipboardCheck, ListTodo, Pencil, Wand2, BrainCircuit, FileUp, Gift, Calendar as CalendarIcon, Clock, Check, X, Eye } from "lucide-react"
+import { FileText, PlusCircle, User, Trash2, HelpCircle, ClipboardCheck, ListTodo, Pencil, Wand2, BrainCircuit, FileUp, Gift, Calendar as CalendarIcon, Clock, Check, X, Eye, Maximize, Minimize } from "lucide-react"
 import { AIContentGenerator } from "@/components/ai-content-generator"
 import { AIChallengeGenerator } from "@/components/ai-challenge-generator"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -47,6 +47,7 @@ export default function TeacherCoursePage({ params }: { params: { id: string } }
   const [submissions, setSubmissions] = React.useState<ChallengeSubmission[]>([]);
   const [assignmentToEdit, setAssignmentToEdit] = React.useState<Assignment | null>(null);
   const [viewingImage, setViewingImage] = React.useState<string | null>(null);
+  const [isImageMaximized, setIsImageMaximized] = React.useState(false);
   const { toast } = useToast()
 
   const { register, handleSubmit, setValue, getValues, control, reset, formState: {isDirty} } = useForm<Assignment>();
@@ -587,16 +588,39 @@ export default function TeacherCoursePage({ params }: { params: { id: string } }
           )}
         </DialogContent>
       </Dialog>
-      <Dialog open={!!viewingImage} onOpenChange={(open) => !open && setViewingImage(null)}>
-        <DialogContent className="sm:max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Revisión de Entrega</DialogTitle>
-            <DialogDescription>
-              Esta es la imagen que el estudiante ha entregado para el desafío.
-            </DialogDescription>
+      <Dialog 
+        open={!!viewingImage} 
+        onOpenChange={(open) => {
+            if (!open) {
+                setViewingImage(null);
+                setIsImageMaximized(false);
+            }
+        }}
+      >
+        <DialogContent 
+            className={cn(
+                "sm:max-w-4xl transition-all duration-300 ease-in-out", 
+                isImageMaximized && "sm:max-w-[90vw] h-[90vh] flex flex-col"
+            )}
+        >
+          <DialogHeader className="flex-row items-center justify-between flex-shrink-0">
+            <div>
+                <DialogTitle>Revisión de Entrega</DialogTitle>
+                <DialogDescription>
+                  Esta es la imagen que el estudiante ha entregado para el desafío.
+                </DialogDescription>
+            </div>
+             <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setIsImageMaximized(!isImageMaximized)}
+            >
+                {isImageMaximized ? <Minimize className="h-5 w-5" /> : <Maximize className="h-5 w-5" />}
+                <span className="sr-only">{isImageMaximized ? 'Minimizar' : 'Maximizar'}</span>
+            </Button>
           </DialogHeader>
           {viewingImage && (
-            <div className="relative mt-4 aspect-video w-full">
+            <div className={cn("relative mt-2", isImageMaximized ? "flex-grow" : "aspect-video w-full")}>
               <Image src={viewingImage} alt="Entrega de estudiante" fill className="object-contain rounded-md" />
             </div>
           )}
