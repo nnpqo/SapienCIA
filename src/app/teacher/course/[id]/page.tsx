@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Button } from "@/components/ui/button"
 import { Leaderboard } from "@/components/leaderboard"
 import { mockCourses, mockStudents, type Assignment, type Question, type Challenge } from "@/lib/mock-data"
-import { FileText, PlusCircle, User, Award as AwardIcon, Trash2, HelpCircle, ClipboardCheck, ListTodo, Pencil, Wand2 } from "lucide-react"
+import { FileText, PlusCircle, User, Award as AwardIcon, Trash2, HelpCircle, ClipboardCheck, ListTodo, Pencil, Wand2, BrainCircuit, FileUp } from "lucide-react"
 import { AIContentGenerator } from "@/components/ai-content-generator"
 import { AIChallengeGenerator } from "@/components/ai-challenge-generator"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -22,7 +22,12 @@ const assignmentIcons = {
   quiz: <HelpCircle className="h-5 w-5 text-primary" />,
   survey: <ListTodo className="h-5 w-5 text-primary" />,
   assignment: <ClipboardCheck className="h-5 w-5 text-primary" />,
-}
+};
+
+const challengeIcons = {
+  quiz: <BrainCircuit className="h-5 w-5 text-primary" />,
+  submission: <FileUp className="h-5 w-5 text-primary" />,
+};
 
 export default function TeacherCoursePage({ params }: { params: { id: string } }) {
   const resolvedParams = React.use(params)
@@ -96,11 +101,10 @@ export default function TeacherCoursePage({ params }: { params: { id: string } }
     }
   };
 
-  const handlePublishChallenge = (newChallengeData: Omit<Challenge, 'id' | 'type'>) => {
+  const handlePublishChallenge = (newChallengeData: Omit<Challenge, 'id'>) => {
     const newChallenge: Challenge = {
       ...newChallengeData,
       id: `chl-${Date.now()}`,
-      type: 'quiz', // For now, all challenges are quizzes
     };
     const updatedChallenges = [...challenges, newChallenge];
     setChallenges(updatedChallenges);
@@ -253,7 +257,9 @@ export default function TeacherCoursePage({ params }: { params: { id: string } }
                                 <Card key={challenge.id} className="flex flex-col">
                                     <CardHeader>
                                         <div className="flex justify-between items-start">
-                                            <CardTitle className="text-xl flex items-center gap-2"><AwardIcon className="text-primary"/> {challenge.title}</CardTitle>
+                                            <CardTitle className="text-xl flex items-center gap-2">
+                                              {challengeIcons[challenge.type]} {challenge.title}
+                                            </CardTitle>
                                             <Button variant="ghost" size="icon" className="shrink-0" onClick={() => handleDeleteChallenge(challenge.id)}>
                                                 <Trash2 className="h-4 w-4 text-destructive"/>
                                             </Button>

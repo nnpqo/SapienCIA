@@ -6,9 +6,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Button } from "@/components/ui/button"
 import { Leaderboard } from "@/components/leaderboard"
 import { mockCourses, type Assignment, type Challenge } from "@/lib/mock-data"
-import { FileText, Award as AwardIcon, CheckCircle2, HelpCircle, ClipboardCheck, ListTodo, Send } from "lucide-react"
+import { FileText, Award as AwardIcon, CheckCircle2, HelpCircle, ClipboardCheck, ListTodo, Send, BrainCircuit, FileUp } from "lucide-react"
 import { Chatbot } from "@/components/chatbot"
 import { QuizChallengeModal } from "@/components/quiz-challenge-modal"
+import { SubmissionChallengeModal } from "@/components/submission-challenge-modal"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
 import { useForm } from "react-hook-form"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
@@ -21,6 +22,11 @@ const assignmentIcons = {
   quiz: <HelpCircle className="h-5 w-5 text-primary" />,
   survey: <ListTodo className="h-5 w-5 text-primary" />,
   assignment: <ClipboardCheck className="h-5 w-5 text-primary" />,
+};
+
+const challengeIcons = {
+  quiz: <BrainCircuit className="h-5 w-5 text-primary" />,
+  submission: <FileUp className="h-5 w-5 text-primary" />,
 };
 
 export default function StudentCoursePage({ params }: { params: { id: string } }) {
@@ -203,7 +209,9 @@ export default function StudentCoursePage({ params }: { params: { id: string } }
                             {challenges.map(challenge => (
                                 <Card key={challenge.id} className="flex flex-col justify-between">
                                     <CardHeader>
-                                        <CardTitle className="text-xl flex items-center gap-2"><AwardIcon className="text-primary"/> {challenge.title}</CardTitle>
+                                        <CardTitle className="text-xl flex items-center gap-2">
+                                            {challengeIcons[challenge.type]} {challenge.title}
+                                        </CardTitle>
                                         <CardDescription>{challenge.description}</CardDescription>
                                     </CardHeader>
                                     <CardContent>
@@ -217,12 +225,21 @@ export default function StudentCoursePage({ params }: { params: { id: string } }
                                                 Completado
                                             </Button>
                                         ) : (
-                                            <QuizChallengeModal 
-                                              challenge={challenge} 
-                                              onChallengeComplete={() => handleChallengeComplete(challenge.id)}
-                                            >
-                                                <Button size="sm">Iniciar Desafío</Button>
-                                            </QuizChallengeModal>
+                                            challenge.type === 'quiz' ? (
+                                                <QuizChallengeModal 
+                                                  challenge={challenge} 
+                                                  onChallengeComplete={() => handleChallengeComplete(challenge.id)}
+                                                >
+                                                    <Button size="sm">Iniciar Desafío</Button>
+                                                </QuizChallengeModal>
+                                            ) : (
+                                                <SubmissionChallengeModal
+                                                    challenge={challenge}
+                                                    onChallengeComplete={() => handleChallengeComplete(challenge.id)}
+                                                >
+                                                    <Button size="sm">Iniciar Desafío</Button>
+                                                </SubmissionChallengeModal>
+                                            )
                                         )}
                                     </CardFooter>
                                 </Card>

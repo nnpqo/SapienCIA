@@ -16,7 +16,7 @@ export interface Assignment {
 export interface Challenge {
   id: string;
   title: string;
-  type: 'quiz';
+  type: 'quiz' | 'submission';
   description: string;
   points: number;
   topic: string; // The topic for the AI to generate questions

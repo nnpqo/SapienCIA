@@ -6,18 +6,19 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Upload, Wand2 } from "lucide-react"
+import { Upload, Wand2, FileUp, BrainCircuit } from "lucide-react"
 import { generateChallengeDetails, type GenerateChallengeDetailsOutput } from "@/ai/flows/generate-challenge-details"
 import { useForm, Controller } from "react-hook-form"
 import type { Challenge } from "@/lib/mock-data"
 
 interface AIChallengeGeneratorProps {
-  onPublish: (challenge: Omit<Challenge, 'id' | 'type'>) => void
+  onPublish: (challenge: Omit<Challenge, 'id'>) => void
 }
 
 type FormData = {
   topic: string;
   difficulty: 'easy' | 'medium' | 'hard';
+  type: 'quiz' | 'submission';
 };
 
 export function AIChallengeGenerator({ onPublish }: AIChallengeGeneratorProps) {
@@ -29,6 +30,7 @@ export function AIChallengeGenerator({ onPublish }: AIChallengeGeneratorProps) {
     defaultValues: {
       difficulty: "medium",
       topic: "",
+      type: "quiz",
     }
   })
 
@@ -75,6 +77,30 @@ export function AIChallengeGenerator({ onPublish }: AIChallengeGeneratorProps) {
               <Label htmlFor="topic">Tema del Desafío</Label>
               <Input id="topic" {...register("topic", { required: "El tema es obligatorio" })} placeholder="Ej: Historia de Bolivia" />
               {errors.topic && <p className="text-sm text-destructive mt-1">{errors.topic.message}</p>}
+            </div>
+            <div>
+              <Label>Tipo de Desafío</Label>
+              <Controller
+                name="type"
+                control={control}
+                render={({ field }) => (
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <SelectTrigger><SelectValue placeholder="Selecciona el tipo" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="quiz">
+                        <div className="flex items-center gap-2">
+                          <BrainCircuit className="h-4 w-4" /> Cuestionario (IA)
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="submission">
+                        <div className="flex items-center gap-2">
+                           <FileUp className="h-4 w-4" /> Entrega de Archivo
+                        </div>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+              />
             </div>
             <div>
               <Label>Nivel de Dificultad</Label>
