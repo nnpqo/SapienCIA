@@ -61,7 +61,7 @@ export function AIContentGenerator({ courseName, onPublish }: AIContentGenerator
       <DialogTrigger asChild>
         <Button size="sm"><Sparkles className="mr-2 h-4 w-4" /> Generar Tarea con IA</Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[800px]">
+      <DialogContent className="sm:max-w-4xl">
         <DialogHeader>
           <DialogTitle className="font-headline text-2xl">Generar Contenido Educativo</DialogTitle>
           <DialogDescription>Usa la IA para crear rápidamente cuestionarios, encuestas o tareas para tu curso.</DialogDescription>
@@ -120,11 +120,11 @@ export function AIContentGenerator({ courseName, onPublish }: AIContentGenerator
             </Button>
           </form>
 
-          <div className="bg-secondary/50 p-4 rounded-lg flex flex-col">
+          <div className="bg-secondary/50 p-4 rounded-lg">
             <h3 className="font-headline mb-4 text-center">Contenido Generado</h3>
-            <ScrollArea className="flex-grow flex flex-col space-y-4 bg-background rounded-md border p-4 min-h-[300px]">
+            <ScrollArea className="bg-background rounded-md border p-4 h-[400px]">
               {isLoading ? (
-                <div className="flex-grow flex items-center justify-center text-muted-foreground">
+                <div className="flex h-full items-center justify-center text-muted-foreground">
                   <p>La IA está pensando...</p>
                 </div>
               ) : generatedContent ? (
@@ -149,22 +149,22 @@ export function AIContentGenerator({ courseName, onPublish }: AIContentGenerator
                   )}
                 </div>
               ) : (
-                <div className="flex-grow flex items-center justify-center text-center text-muted-foreground">
+                <div className="flex h-full items-center justify-center text-center text-muted-foreground">
                   <p>Tu contenido generado aparecerá aquí.</p>
                 </div>
               )}
             </ScrollArea>
-            <DialogFooter className="mt-4 gap-2 sm:justify-end">
-               <DialogClose asChild>
-                <Button variant="outline">Cancelar</Button>
-              </DialogClose>
-              <Button onClick={handlePublish} disabled={!generatedContent || isLoading || generatedContent?.title === "Error"}>
-                <Upload className="mr-2 h-4 w-4" />
-                Publicar
-              </Button>
-            </DialogFooter>
           </div>
         </div>
+        <DialogFooter className="pt-4">
+           <DialogClose asChild>
+            <Button variant="outline">Cancelar</Button>
+          </DialogClose>
+          <Button onClick={handlePublish} disabled={!generatedContent || isLoading || generatedContent?.title === "Error"}>
+            <Upload className="mr-2 h-4 w-4" />
+            Publicar
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   )
