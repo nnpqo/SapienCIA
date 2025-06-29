@@ -5,8 +5,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Leaderboard } from "@/components/leaderboard"
-import { mockCourses, mockStudents, type Assignment, type Challenge, type Prize } from "@/lib/mock-data"
-import { FileText, Award as AwardIcon, CheckCircle2, HelpCircle, ClipboardCheck, ListTodo, Send, BrainCircuit, FileUp, Gift, Lock, CheckCircle, Clock, Eye } from "lucide-react"
+import { mockCourses, mockStudents, type Assignment, type Challenge, type Prize, type ChallengeSubmission } from "@/lib/mock-data"
+import { FileText, Award as AwardIcon, CheckCircle2, HelpCircle, ClipboardCheck, ListTodo, Send, BrainCircuit, FileUp, Gift, Lock, CheckCircle, Clock, Eye, XCircle } from "lucide-react"
 import { Chatbot } from "@/components/chatbot"
 import { QuizChallengeModal } from "@/components/quiz-challenge-modal"
 import { SubmissionChallengeModal } from "@/components/submission-challenge-modal"
@@ -43,6 +43,7 @@ export default function StudentCoursePage({ params }: { params: { id: string } }
   const [assignments, setAssignments] = React.useState<Assignment[]>([]);
   const [challenges, setChallenges] = React.useState<Challenge[]>([]);
   const [prizes, setPrizes] = React.useState<Prize[]>([]);
+  const [submissions, setSubmissions] = React.useState<ChallengeSubmission[]>([]);
   const [completedChallenges, setCompletedChallenges] = React.useState<Set<string>>(new Set());
   const [completedAssignments, setCompletedAssignments] = React.useState<Set<string>>(new Set());
   const [quizSubmissions, setQuizSubmissions] = React.useState<Record<string, QuizResults>>({});
@@ -66,6 +67,9 @@ export default function StudentCoursePage({ params }: { params: { id: string } }
       const storedPrizes = localStorage.getItem(`prizes-${course.id}`);
       if (storedPrizes) setPrizes(JSON.parse(storedPrizes));
 
+      const storedSubmissions = localStorage.getItem(`challengeSubmissions-${course.id}`);
+      if (storedSubmissions) setSubmissions(JSON.parse(storedSubmissions));
+
       const storedCompletedChallenges = localStorage.getItem(`completedChallenges-${course.id}`);
       if (storedCompletedChallenges) setCompletedChallenges(new Set(JSON.parse(storedCompletedChallenges)));
 
@@ -80,9 +84,10 @@ export default function StudentCoursePage({ params }: { params: { id: string } }
     }
   }, [course?.id, currentStudent.id]);
   
-  const saveState = (key: string, value: any) => {
-    if (course) {
-        localStorage.setItem(`${key}-${course.id}`, JSON.stringify(value));
+  const saveState = (key: string, value: any, courseSpecific = true) => {
+    if (course || !courseSpecific) {
+        const fullKey = courseSpecific ? `${key}-${course.id}` : key;
+        localStorage.setItem(fullKey, JSON.stringify(value));
     }
   }
 
@@ -90,6 +95,31 @@ export default function StudentCoursePage({ params }: { params: { id: string } }
     const updatedCompleted = new Set(completedChallenges).add(challengeId);
     setCompletedChallenges(updatedCompleted);
     saveState('completedChallenges', Array.from(updatedCompleted));
+  };
+  
+  const handleFinalSubmit = (challengeId: string, challengeTitle: string, imageDataUri: string) => {
+      if (!course) return;
+      const newSubmission: ChallengeSubmission = {
+          id: `sub-${Date.now()}`,
+          courseId: course.id,
+          challengeId,
+          challengeTitle,
+          studentId: currentStudent.id,
+          studentName: currentStudent.name,
+          imageUrl: imageDataUri,
+          status: 'pending',
+          submittedAt: new Date().toISOString(),
+      };
+      const updatedSubmissions = [...submissions, newSubmission];
+      setSubmissions(updatedSubmissions);
+      saveState('challengeSubmissions', updatedSubmissions);
+
+      handleChallengeComplete(challengeId);
+      
+      toast({
+          title: "¡Entrega Enviada!",
+          description: "Tu profesor revisará tu trabajo pronto.",
+      });
   };
 
   const handleAssignmentComplete = (assignmentId: string) => {
@@ -267,7 +297,15 @@ export default function StudentCoursePage({ params }: { params: { id: string } }
                 <CardContent className="space-y-4">
                     {challenges.length > 0 ? (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {challenges.map(challenge => (
+                            {challenges.map(challenge => {
+                                const isCompleted = completedChallenges.has(challenge.id);
+                                let submissionStatus: ChallengeSubmission['status'] | null = null;
+                                if (isCompleted && challenge.type === 'submission') {
+                                    const submission = submissions.find(s => s.challengeId === challenge.id && s.studentId === currentStudent.id);
+                                    submissionStatus = submission?.status || null;
+                                }
+
+                                return (
                                 <Card key={challenge.id} className="flex flex-col justify-between">
                                     <CardHeader>
                                         <CardTitle className="text-xl flex items-center gap-2">
@@ -280,10 +318,14 @@ export default function StudentCoursePage({ params }: { params: { id: string } }
                                     </CardContent>
                                     <CardFooter className="flex items-center justify-between">
                                         <p className="font-bold text-yellow-500 text-lg">+{challenge.points} Puntos</p>
-                                        {completedChallenges.has(challenge.id) ? (
-                                            <Button size="sm" variant="outline" disabled>
-                                                <CheckCircle2 className="mr-2 h-4 w-4 text-green-500" />
-                                                Completado
+                                        {isCompleted ? (
+                                             <Button size="sm" variant="outline" disabled>
+                                                {challenge.type === 'quiz' ? <><CheckCircle2 className="mr-2 h-4 w-4 text-green-500"/>Completado</> : 
+                                                 submissionStatus === 'pending' ? <><Clock className="mr-2 h-4 w-4 text-yellow-500"/>Pendiente</> :
+                                                 submissionStatus === 'approved' ? <><CheckCircle className="mr-2 h-4 w-4 text-green-500"/>Aprobado</> :
+                                                 submissionStatus === 'rejected' ? <><XCircle className="mr-2 h-4 w-4 text-destructive"/>Rechazado</> :
+                                                 <><CheckCircle2 className="mr-2 h-4 w-4 text-green-500" />Entregado</>
+                                                }
                                             </Button>
                                         ) : (
                                             challenge.type === 'quiz' ? (
@@ -296,7 +338,7 @@ export default function StudentCoursePage({ params }: { params: { id: string } }
                                             ) : (
                                                 <SubmissionChallengeModal
                                                     challenge={challenge}
-                                                    onChallengeComplete={() => handleChallengeComplete(challenge.id)}
+                                                    onFinalSubmit={(imageDataUri) => handleFinalSubmit(challenge.id, challenge.title, imageDataUri)}
                                                 >
                                                     <Button size="sm">Iniciar Desafío</Button>
                                                 </SubmissionChallengeModal>
@@ -304,7 +346,7 @@ export default function StudentCoursePage({ params }: { params: { id: string } }
                                         )}
                                     </CardFooter>
                                 </Card>
-                            ))}
+                            )})}
                         </div>
                     ) : (
                         <div className="text-center text-muted-foreground py-10">

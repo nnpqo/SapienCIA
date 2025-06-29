@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import Image from "next/image"
-import { UploadCloud, CheckCircle, PartyPopper, Frown, Loader2 } from "lucide-react"
+import { UploadCloud, CheckCircle, Wand2, Loader2, Send } from "lucide-react"
 import type { Challenge } from "@/lib/mock-data"
 import { useToast } from "@/hooks/use-toast"
 import { analyzeSubmission, type AnalyzeSubmissionOutput } from "@/ai/flows/analyze-submission-flow"
@@ -15,7 +15,7 @@ import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert"
 interface SubmissionChallengeModalProps {
   challenge: Challenge
   children: React.ReactNode
-  onChallengeComplete: () => void
+  onFinalSubmit: (imageDataUri: string) => void
 }
 
 const fileToDataUri = (file: File): Promise<string> => {
@@ -27,18 +27,18 @@ const fileToDataUri = (file: File): Promise<string> => {
   });
 };
 
-export function SubmissionChallengeModal({ challenge, children, onChallengeComplete }: SubmissionChallengeModalProps) {
+export function SubmissionChallengeModal({ challenge, children, onFinalSubmit }: SubmissionChallengeModalProps) {
   const [open, setOpen] = useState(false)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [analysisResult, setAnalysisResult] = useState<AnalyzeSubmissionOutput | null>(null)
+  const [isLoading, setIsLoading] = useState(false)
+  const [aiFeedback, setAiFeedback] = useState<AnalyzeSubmissionOutput | null>(null)
   const { toast } = useToast()
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (file) {
-      setAnalysisResult(null); // Reset previous analysis
+      setAiFeedback(null); // Reset previous analysis
       setSelectedFile(file)
       if (previewUrl) {
         URL.revokeObjectURL(previewUrl)
@@ -47,11 +47,10 @@ export function SubmissionChallengeModal({ challenge, children, onChallengeCompl
     }
   }
 
-  const handleSubmit = async () => {
-    if (!selectedFile) return
-    setIsSubmitting(true)
-    setAnalysisResult(null)
-    
+  const handleGetFeedback = async () => {
+    if (!selectedFile) return;
+    setIsLoading(true);
+    setAiFeedback(null);
     try {
       const dataUri = await fileToDataUri(selectedFile);
       const result = await analyzeSubmission({ 
@@ -59,21 +58,7 @@ export function SubmissionChallengeModal({ challenge, children, onChallengeCompl
         topic: challenge.topic,
         description: challenge.description
       });
-      setAnalysisResult(result);
-
-      if (result.isApproved) {
-        toast({
-          title: "¡Entrega exitosa!",
-          description: `¡La IA ha aprobado tu entrega! Has ganado ${challenge.points} puntos.`,
-        })
-        onChallengeComplete()
-      } else {
-         toast({
-          title: "Inténtalo de nuevo",
-          description: `La IA ha revisado tu entrega y tiene algunas sugerencias.`,
-          variant: "destructive",
-        })
-      }
+      setAiFeedback(result);
     } catch (error) {
        console.error("Error analyzing submission:", error);
        toast({
@@ -82,7 +67,21 @@ export function SubmissionChallengeModal({ challenge, children, onChallengeCompl
          variant: "destructive",
        })
     } finally {
-        setIsSubmitting(false)
+        setIsLoading(false)
+    }
+  }
+
+  const handleFinalSubmit = async () => {
+    if (!selectedFile) return;
+    setIsLoading(true);
+    try {
+      const dataUri = await fileToDataUri(selectedFile);
+      onFinalSubmit(dataUri);
+      // Parent component will handle closing the modal and showing toast
+      setOpen(false); // Close the modal on successful submission
+    } catch (error) {
+      toast({ title: "Error al Entregar", description: "No se pudo entregar el trabajo. Inténtalo de nuevo."});
+      setIsLoading(false);
     }
   }
 
@@ -100,8 +99,8 @@ export function SubmissionChallengeModal({ challenge, children, onChallengeCompl
         URL.revokeObjectURL(previewUrl)
       }
       setPreviewUrl(null)
-      setIsSubmitting(false)
-      setAnalysisResult(null)
+      setIsLoading(false)
+      setAiFeedback(null)
   }
 
   const handleOpenChange = (isOpen: boolean) => {
@@ -112,39 +111,6 @@ export function SubmissionChallengeModal({ challenge, children, onChallengeCompl
         }, 300)
     }
   }
-
-  const renderFooter = () => {
-      if (analysisResult?.isApproved) {
-          return (
-               <DialogFooter>
-                  <Button onClick={() => setOpen(false)}>¡Genial!</Button>
-              </DialogFooter>
-          )
-      }
-      if (analysisResult && !analysisResult.isApproved) {
-           return (
-               <DialogFooter>
-                  <Button variant="outline" onClick={resetState}>Intentar de Nuevo</Button>
-              </DialogFooter>
-          )
-      }
-      return (
-         <DialogFooter>
-          <Button 
-            onClick={handleSubmit} 
-            disabled={!selectedFile || isSubmitting}
-          >
-            {isSubmitting ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Analizando...
-              </>
-            ) : `Entregar y que la IA revise`}
-          </Button>
-        </DialogFooter>
-      )
-  }
-
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -171,10 +137,10 @@ export function SubmissionChallengeModal({ challenge, children, onChallengeCompl
                   <p className="text-xs text-muted-foreground">Imágenes (PNG, JPG, etc.)</p>
                 </div>
               )}
-              <Input id={`file-upload-${challenge.id}`} type="file" className="hidden" onChange={handleFileChange} accept="image/*" disabled={isSubmitting} />
+              <Input id={`file-upload-${challenge.id}`} type="file" className="hidden" onChange={handleFileChange} accept="image/*" disabled={isLoading} />
             </Label>
           </div>
-          {selectedFile && !analysisResult && (
+          {selectedFile && (
               <div className="flex items-center p-2 text-sm border rounded-md bg-background">
                 <CheckCircle className="w-4 h-4 mr-2 text-green-500" />
                 <span className="font-medium truncate">{selectedFile.name}</span>
@@ -182,18 +148,27 @@ export function SubmissionChallengeModal({ challenge, children, onChallengeCompl
                   {(selectedFile.size / 1024).toFixed(2)} KB
                 </span>
               </div>
-            )}
-            {analysisResult && (
-                <Alert variant={analysisResult.isApproved ? 'default' : 'destructive'}>
-                    {analysisResult.isApproved ? <PartyPopper className="h-4 w-4" /> : <Frown className="h-4 w-4" />}
-                    <AlertTitle>{analysisResult.isApproved ? '¡Aprobado por la IA!' : 'Necesita Revisión'}</AlertTitle>
-                    <AlertDescription>
-                        {analysisResult.feedback}
-                    </AlertDescription>
-                </Alert>
-            )}
+          )}
+          {aiFeedback && (
+              <Alert variant={aiFeedback.isApproved ? 'default' : 'destructive'}>
+                  <Wand2 className="h-4 w-4" />
+                  <AlertTitle>Retroalimentación de la IA</AlertTitle>
+                  <AlertDescription>
+                      {aiFeedback.feedback}
+                  </AlertDescription>
+              </Alert>
+          )}
         </div>
-        {renderFooter()}
+        <DialogFooter className="gap-2 sm:flex-row sm:justify-end">
+            <Button variant="outline" onClick={handleGetFeedback} disabled={!selectedFile || isLoading}>
+              {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Wand2 className="mr-2 h-4 w-4"/>}
+              Retroalimentación IA
+            </Button>
+            <Button onClick={handleFinalSubmit} disabled={!selectedFile || isLoading}>
+              {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Send className="mr-2 h-4 w-4"/>}
+              Entregar para Revisión
+            </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   )

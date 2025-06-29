@@ -23,6 +23,18 @@ export interface Challenge {
   topic: string; // The topic for the AI to generate questions
 }
 
+export interface ChallengeSubmission {
+  id: string;
+  courseId: string;
+  challengeId: string;
+  challengeTitle: string;
+  studentId: string;
+  studentName: string;
+  imageUrl: string; // The submitted image data URI
+  status: 'pending' | 'approved' | 'rejected';
+  submittedAt: string; // ISO date string
+}
+
 export interface Prize {
   id: string;
   courseId: string;

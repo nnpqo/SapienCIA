@@ -5,8 +5,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Leaderboard } from "@/components/leaderboard"
-import { mockCourses, mockStudents, type Assignment, type Challenge, type Prize } from "@/lib/mock-data"
-import { FileText, PlusCircle, User, Trash2, HelpCircle, ClipboardCheck, ListTodo, Pencil, Wand2, BrainCircuit, FileUp, Gift, Calendar as CalendarIcon, Clock } from "lucide-react"
+import { mockCourses, mockStudents, type Assignment, type Challenge, type Prize, type ChallengeSubmission, type Student } from "@/lib/mock-data"
+import { FileText, PlusCircle, User, Trash2, HelpCircle, ClipboardCheck, ListTodo, Pencil, Wand2, BrainCircuit, FileUp, Gift, Calendar as CalendarIcon, Clock, Check, X, Eye } from "lucide-react"
 import { AIContentGenerator } from "@/components/ai-content-generator"
 import { AIChallengeGenerator } from "@/components/ai-challenge-generator"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -23,6 +23,9 @@ import { es } from "date-fns/locale"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Calendar } from "@/components/ui/calendar"
 import { cn } from "@/lib/utils"
+import { useToast } from "@/hooks/use-toast"
+import Image from "next/image"
+
 
 const assignmentIcons = {
   quiz: <HelpCircle className="h-5 w-5 text-primary" />,
@@ -41,24 +44,26 @@ export default function TeacherCoursePage({ params }: { params: { id: string } }
   const [assignments, setAssignments] = React.useState<Assignment[]>([]);
   const [challenges, setChallenges] = React.useState<Challenge[]>([]);
   const [prizes, setPrizes] = React.useState<Prize[]>([]);
+  const [submissions, setSubmissions] = React.useState<ChallengeSubmission[]>([]);
   const [assignmentToEdit, setAssignmentToEdit] = React.useState<Assignment | null>(null);
+  const [viewingImage, setViewingImage] = React.useState<string | null>(null);
+  const { toast } = useToast()
 
   const { register, handleSubmit, setValue, getValues, control, reset, formState: {isDirty} } = useForm<Assignment>();
 
   React.useEffect(() => {
     if (typeof window !== 'undefined' && course) {
       const storedAssignments = localStorage.getItem(`assignments-${course.id}`);
-      if (storedAssignments) {
-        setAssignments(JSON.parse(storedAssignments));
-      }
-       const storedChallenges = localStorage.getItem(`challenges-${course.id}`);
-      if (storedChallenges) {
-        setChallenges(JSON.parse(storedChallenges));
-      }
+      if (storedAssignments) setAssignments(JSON.parse(storedAssignments));
+      
+      const storedChallenges = localStorage.getItem(`challenges-${course.id}`);
+      if (storedChallenges) setChallenges(JSON.parse(storedChallenges));
+      
       const storedPrizes = localStorage.getItem(`prizes-${course.id}`);
-      if (storedPrizes) {
-          setPrizes(JSON.parse(storedPrizes));
-      }
+      if (storedPrizes) setPrizes(JSON.parse(storedPrizes));
+
+      const storedSubmissions = localStorage.getItem(`challengeSubmissions-${course.id}`);
+      if (storedSubmissions) setSubmissions(JSON.parse(storedSubmissions));
     }
   }, [course?.id]);
 
@@ -66,10 +71,16 @@ export default function TeacherCoursePage({ params }: { params: { id: string } }
     if (assignmentToEdit) {
       reset({
         ...assignmentToEdit,
-        dueDate: new Date(assignmentToEdit.dueDate) as any, // The form expects a Date object
+        dueDate: new Date(assignmentToEdit.dueDate) as any,
       });
     }
   }, [assignmentToEdit, reset]);
+
+  const saveState = (key: string, value: any) => {
+    if (course) {
+      localStorage.setItem(`${key}-${course.id}`, JSON.stringify(value));
+    }
+  }
 
   const handlePublishAssignment = (newAssignmentData: Omit<Assignment, 'id'>) => {
     const newAssignment: Assignment = {
@@ -78,9 +89,7 @@ export default function TeacherCoursePage({ params }: { params: { id: string } }
     };
     const updatedAssignments = [...assignments, newAssignment];
     setAssignments(updatedAssignments);
-    if (course) {
-      localStorage.setItem(`assignments-${course.id}`, JSON.stringify(updatedAssignments));
-    }
+    saveState('assignments', updatedAssignments);
   };
 
   const handleSaveAssignment = (data: Assignment) => {
@@ -93,7 +102,6 @@ export default function TeacherCoursePage({ params }: { params: { id: string } }
         questions = [];
     }
     
-    // Ensure dueDate is an ISO string before saving
     const updatedAssignment = { 
         ...data, 
         questions,
@@ -102,18 +110,14 @@ export default function TeacherCoursePage({ params }: { params: { id: string } }
 
     const updatedAssignments = assignments.map(a => a.id === updatedAssignment.id ? updatedAssignment : a);
     setAssignments(updatedAssignments);
-    if (course) {
-      localStorage.setItem(`assignments-${course.id}`, JSON.stringify(updatedAssignments));
-    }
+    saveState('assignments', updatedAssignments);
     setAssignmentToEdit(null);
   };
 
   const handleDeleteAssignment = (assignmentId: string) => {
     const updatedAssignments = assignments.filter(a => a.id !== assignmentId);
     setAssignments(updatedAssignments);
-    if (course) {
-      localStorage.setItem(`assignments-${course.id}`, JSON.stringify(updatedAssignments));
-    }
+    saveState('assignments', updatedAssignments);
   };
 
   const handlePublishChallenge = (newChallengeData: Omit<Challenge, 'id'>) => {
@@ -123,17 +127,13 @@ export default function TeacherCoursePage({ params }: { params: { id: string } }
     };
     const updatedChallenges = [...challenges, newChallenge];
     setChallenges(updatedChallenges);
-    if (course) {
-      localStorage.setItem(`challenges-${course.id}`, JSON.stringify(updatedChallenges));
-    }
+    saveState('challenges', updatedChallenges);
   };
 
   const handleDeleteChallenge = (challengeId: string) => {
     const updatedChallenges = challenges.filter(c => c.id !== challengeId);
     setChallenges(updatedChallenges);
-    if (course) {
-      localStorage.setItem(`challenges-${course.id}`, JSON.stringify(updatedChallenges));
-    }
+    saveState('challenges', updatedChallenges);
   };
   
   const handlePublishPrize = (newPrizeData: Omit<Prize, 'id'>) => {
@@ -143,17 +143,25 @@ export default function TeacherCoursePage({ params }: { params: { id: string } }
     };
     const updatedPrizes = [...prizes, newPrize];
     setPrizes(updatedPrizes);
-    if (course) {
-      localStorage.setItem(`prizes-${course.id}`, JSON.stringify(updatedPrizes));
-    }
+    saveState('prizes', updatedPrizes);
   };
 
   const handleDeletePrize = (prizeId: string) => {
       const updatedPrizes = prizes.filter(p => p.id !== prizeId);
       setPrizes(updatedPrizes);
-      if (course) {
-        localStorage.setItem(`prizes-${course.id}`, JSON.stringify(updatedPrizes));
-      }
+      saveState('prizes', updatedPrizes);
+  };
+
+  const handleReviewSubmission = (submissionId: string, newStatus: 'approved' | 'rejected') => {
+    const updatedSubmissions = submissions.map(sub => 
+        sub.id === submissionId ? { ...sub, status: newStatus } : sub
+    );
+    setSubmissions(updatedSubmissions);
+    saveState('challengeSubmissions', updatedSubmissions);
+    toast({
+        title: "Revisión enviada",
+        description: `La entrega ha sido marcada como ${newStatus === 'approved' ? 'aprobada' : 'rechazada'}.`
+    });
   };
 
   if (!course) {
@@ -164,6 +172,16 @@ export default function TeacherCoursePage({ params }: { params: { id: string } }
     )
   }
 
+  const pendingSubmissions = submissions.filter(s => s.status === 'pending');
+  const submissionsByChallenge = pendingSubmissions.reduce((acc, sub) => {
+    if (!acc[sub.challengeTitle]) {
+      acc[sub.challengeTitle] = [];
+    }
+    acc[sub.challengeTitle].push(sub);
+    return acc;
+  }, {} as Record<string, ChallengeSubmission[]>);
+
+
   return (
     <div className="p-4 md:p-8">
       <div className="mb-8">
@@ -172,10 +190,16 @@ export default function TeacherCoursePage({ params }: { params: { id: string } }
       </div>
 
       <Tabs defaultValue="assignments" className="w-full">
-        <TabsList className="mb-6 grid w-full grid-cols-3 sm:grid-cols-3 md:grid-cols-6">
+        <TabsList className="mb-6 grid w-full grid-cols-3 sm:grid-cols-4 md:grid-cols-7">
           <TabsTrigger value="materials">Materiales</TabsTrigger>
           <TabsTrigger value="assignments">Tareas</TabsTrigger>
           <TabsTrigger value="challenges">Desafíos</TabsTrigger>
+          <TabsTrigger value="submissions">
+            Revisiones
+            {pendingSubmissions.length > 0 && 
+              <Badge className="ml-2">{pendingSubmissions.length}</Badge>
+            }
+          </TabsTrigger>
           <TabsTrigger value="prizes">Premios</TabsTrigger>
           <TabsTrigger value="students">Estudiantes</TabsTrigger>
           <TabsTrigger value="leaderboard">Clasificación</TabsTrigger>
@@ -322,6 +346,62 @@ export default function TeacherCoursePage({ params }: { params: { id: string } }
                     ) : (
                         <div className="text-center text-muted-foreground py-10">
                             <p>Aún no has creado ningún desafío. ¡Usa la IA para empezar!</p>
+                        </div>
+                    )}
+                </CardContent>
+            </Card>
+        </TabsContent>
+
+        <TabsContent value="submissions">
+            <Card>
+                <CardHeader>
+                    <CardTitle>Entregas Pendientes de Revisión</CardTitle>
+                    <CardDescription>Revisa el trabajo de tus estudiantes para los desafíos de entrega.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    {pendingSubmissions.length > 0 ? (
+                        <Accordion type="single" collapsible className="w-full space-y-3">
+                            {Object.entries(submissionsByChallenge).map(([challengeTitle, subs]) => (
+                                <AccordionItem value={challengeTitle} key={challengeTitle} className="border rounded-md px-4">
+                                    <AccordionTrigger className="hover:no-underline">
+                                        <div className="flex items-center justify-between w-full">
+                                            <div className="flex items-center gap-3">
+                                                <span className="font-semibold">{challengeTitle}</span>
+                                            </div>
+                                            <Badge variant="secondary">{subs.length} pendiente(s)</Badge>
+                                        </div>
+                                    </AccordionTrigger>
+                                    <AccordionContent>
+                                        <ul className="space-y-3 pt-2">
+                                            {subs.map(sub => (
+                                                <li key={sub.id} className="flex items-center justify-between p-3 rounded-md border bg-background">
+                                                    <div className="flex items-center gap-3">
+                                                        <Avatar className="h-8 w-8">
+                                                            <AvatarImage src={`https://placehold.co/40x40.png?text=${sub.studentName.charAt(0)}`} />
+                                                            <AvatarFallback>{sub.studentName.charAt(0)}</AvatarFallback>
+                                                        </Avatar>
+                                                        <div>
+                                                          <p className="font-semibold">{sub.studentName}</p>
+                                                          <p className="text-xs text-muted-foreground">Entregado: {format(new Date(sub.submittedAt), "dd MMM, yyyy", { locale: es })}</p>
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex items-center gap-2">
+                                                        <Button variant="outline" size="icon" onClick={() => setViewingImage(sub.imageUrl)}>
+                                                            <Eye className="h-4 w-4" />
+                                                        </Button>
+                                                        <Button size="sm" variant="destructive" onClick={() => handleReviewSubmission(sub.id, 'rejected')}><X className="mr-2 h-4 w-4"/>Rechazar</Button>
+                                                        <Button size="sm" onClick={() => handleReviewSubmission(sub.id, 'approved')}><Check className="mr-2 h-4 w-4"/>Aprobar</Button>
+                                                    </div>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </AccordionContent>
+                                </AccordionItem>
+                            ))}
+                        </Accordion>
+                    ) : (
+                        <div className="text-center text-muted-foreground py-10">
+                            <p>¡Buen trabajo! No hay entregas pendientes.</p>
                         </div>
                     )}
                 </CardContent>
@@ -505,6 +585,11 @@ export default function TeacherCoursePage({ params }: { params: { id: string } }
               </DialogFooter>
             </form>
           )}
+        </DialogContent>
+      </Dialog>
+      <Dialog open={!!viewingImage} onOpenChange={(open) => !open && setViewingImage(null)}>
+        <DialogContent className="max-w-4xl p-2">
+            {viewingImage && <Image src={viewingImage} alt="Entrega de estudiante" width={1200} height={800} className="rounded-md" />}
         </DialogContent>
       </Dialog>
     </div>
