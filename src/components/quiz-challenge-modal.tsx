@@ -14,9 +14,10 @@ import { Loader2, PartyPopper, Frown, CheckCircle2 } from "lucide-react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Separator } from "@/components/ui/separator"
 import { cn } from "@/lib/utils"
+import type { Challenge } from "@/lib/mock-data"
 
 interface QuizChallengeModalProps {
-  topic: string
+  challenge: Challenge
   children: React.ReactNode
   onChallengeComplete: () => void
 }
@@ -25,7 +26,7 @@ const FormSchema = z.object({
   answers: z.record(z.string()),
 })
 
-export function QuizChallengeModal({ topic, children, onChallengeComplete }: QuizChallengeModalProps) {
+export function QuizChallengeModal({ challenge, children, onChallengeComplete }: QuizChallengeModalProps) {
   const [open, setOpen] = useState(false)
   const [quiz, setQuiz] = useState<GenerateQuizChallengeOutput | null>(null)
   const [isLoading, setIsLoading] = useState(false)
@@ -45,7 +46,7 @@ export function QuizChallengeModal({ topic, children, onChallengeComplete }: Qui
       setResults(null)
       form.reset()
       try {
-        const generatedQuiz = await generateQuizChallenge({ topic })
+        const generatedQuiz = await generateQuizChallenge({ topic: challenge.topic })
         setQuiz(generatedQuiz)
       } catch (error) {
         console.error("Error generating quiz:", error)
@@ -100,7 +101,7 @@ export function QuizChallengeModal({ topic, children, onChallengeComplete }: Qui
                 <p className="text-lg text-muted-foreground mt-2">
                     Obtuviste {results.score} de {results.total} respuestas correctas.
                 </p>
-                {isSuccess && <p className="text-sm text-green-600 font-semibold mt-1">+150 Puntos Obtenidos</p>}
+                {isSuccess && <p className="text-sm text-green-600 font-semibold mt-1">+{challenge.points} Puntos Obtenidos</p>}
             </div>
             <div className="max-h-[300px] overflow-y-auto space-y-4 pr-2">
                 {results.explanations.map((item, index) => (
@@ -118,7 +119,6 @@ export function QuizChallengeModal({ topic, children, onChallengeComplete }: Qui
       return (
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <DialogDescription className="text-center">Responde las siguientes preguntas para completar el desafío.</DialogDescription>
             <div className="max-h-[50vh] overflow-y-auto pr-4 space-y-6">
               {quiz.questions.map((q, index) => (
                 <FormField
@@ -178,7 +178,10 @@ export function QuizChallengeModal({ topic, children, onChallengeComplete }: Qui
       <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle className="font-headline text-2xl text-center">{quiz?.title || "Desafío de Cuestionario"}</DialogTitle>
+          <DialogTitle className="font-headline text-2xl text-center">{quiz?.title || challenge.title}</DialogTitle>
+           {!results && quiz && (
+            <DialogDescription className="text-center">Responde las siguientes preguntas para completar el desafío.</DialogDescription>
+           )}
         </DialogHeader>
         {renderContent()}
          {results && (

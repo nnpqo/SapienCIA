@@ -13,6 +13,15 @@ export interface Assignment {
   questions?: Question[];
 }
 
+export interface Challenge {
+  id: string;
+  title: string;
+  type: 'quiz';
+  description: string;
+  points: number;
+  topic: string; // The topic for the AI to generate questions
+}
+
 export interface Course {
   id: string;
   title: string;

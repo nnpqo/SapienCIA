@@ -2,12 +2,13 @@
 
 import React from "react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Leaderboard } from "@/components/leaderboard"
-import { mockCourses, mockStudents, type Assignment, type Question } from "@/lib/mock-data"
-import { FileText, PlusCircle, User, Award as AwardIcon, Trash2, HelpCircle, ClipboardCheck, ListTodo, Pencil } from "lucide-react"
+import { mockCourses, mockStudents, type Assignment, type Question, type Challenge } from "@/lib/mock-data"
+import { FileText, PlusCircle, User, Award as AwardIcon, Trash2, HelpCircle, ClipboardCheck, ListTodo, Pencil, Wand2 } from "lucide-react"
 import { AIContentGenerator } from "@/components/ai-content-generator"
+import { AIChallengeGenerator } from "@/components/ai-challenge-generator"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
@@ -27,6 +28,7 @@ export default function TeacherCoursePage({ params }: { params: { id: string } }
   const resolvedParams = React.use(params)
   const course = mockCourses.find(c => c.id === resolvedParams.id)
   const [assignments, setAssignments] = React.useState<Assignment[]>([]);
+  const [challenges, setChallenges] = React.useState<Challenge[]>([]);
   const [assignmentToEdit, setAssignmentToEdit] = React.useState<Assignment | null>(null);
 
   const { register, handleSubmit, setValue, getValues } = useForm<Assignment>();
@@ -36,6 +38,10 @@ export default function TeacherCoursePage({ params }: { params: { id: string } }
       const storedAssignments = localStorage.getItem(`assignments-${course.id}`);
       if (storedAssignments) {
         setAssignments(JSON.parse(storedAssignments));
+      }
+       const storedChallenges = localStorage.getItem(`challenges-${course.id}`);
+      if (storedChallenges) {
+        setChallenges(JSON.parse(storedChallenges));
       }
     }
   }, [course?.id]);
@@ -50,7 +56,7 @@ export default function TeacherCoursePage({ params }: { params: { id: string } }
     }
   }, [assignmentToEdit, setValue]);
 
-  const handlePublish = (newAssignmentData: Omit<Assignment, 'id'>) => {
+  const handlePublishAssignment = (newAssignmentData: Omit<Assignment, 'id'>) => {
     const newAssignment: Assignment = {
       ...newAssignmentData,
       id: `asg-${Date.now()}`
@@ -87,6 +93,27 @@ export default function TeacherCoursePage({ params }: { params: { id: string } }
     setAssignments(updatedAssignments);
     if (course) {
       localStorage.setItem(`assignments-${course.id}`, JSON.stringify(updatedAssignments));
+    }
+  };
+
+  const handlePublishChallenge = (newChallengeData: Omit<Challenge, 'id' | 'type'>) => {
+    const newChallenge: Challenge = {
+      ...newChallengeData,
+      id: `chl-${Date.now()}`,
+      type: 'quiz', // For now, all challenges are quizzes
+    };
+    const updatedChallenges = [...challenges, newChallenge];
+    setChallenges(updatedChallenges);
+    if (course) {
+      localStorage.setItem(`challenges-${course.id}`, JSON.stringify(updatedChallenges));
+    }
+  };
+
+  const handleDeleteChallenge = (challengeId: string) => {
+    const updatedChallenges = challenges.filter(c => c.id !== challengeId);
+    setChallenges(updatedChallenges);
+    if (course) {
+      localStorage.setItem(`challenges-${course.id}`, JSON.stringify(updatedChallenges));
     }
   };
   
@@ -145,7 +172,7 @@ export default function TeacherCoursePage({ params }: { params: { id: string } }
                   <CardTitle>Tareas del Curso</CardTitle>
                   <CardDescription>Crea y publica tareas, cuestionarios y encuestas con IA.</CardDescription>
                 </div>
-                <AIContentGenerator courseName={course.title} onPublish={handlePublish} />
+                <AIContentGenerator courseName={course.title} onPublish={handlePublishAssignment} />
               </CardHeader>
               <CardContent>
                 {assignments.length > 0 ? (
@@ -210,24 +237,44 @@ export default function TeacherCoursePage({ params }: { params: { id: string } }
           </Card>
         </TabsContent>
 
-         <TabsContent value="challenges">
+        <TabsContent value="challenges">
             <Card>
-              <CardHeader className="flex flex-col md:flex-row items-start md:items-center justify-between gap-2">
-                  <div>
-                    <CardTitle>Desafíos</CardTitle>
-                    <CardDescription>Crea desafíos gamificados para tus estudiantes.</CardDescription>
-                  </div>
-                  <Button size="sm"><PlusCircle className="mr-2 h-4 w-4"/> Crear Desafío</Button>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                  <div className="flex items-center justify-between p-4 rounded-lg border">
-                      <div>
-                          <h3 className="font-semibold flex items-center gap-2 text-lg"><AwardIcon className="text-primary"/> El Explorador</h3>
-                          <p className="text-sm text-muted-foreground">Completa los dos primeros capítulos.</p>
-                      </div>
-                      <p className="font-bold text-primary shrink-0">+100 Puntos</p>
-                  </div>
-              </CardContent>
+                <CardHeader className="flex flex-col md:flex-row items-start md:items-center justify-between gap-2">
+                    <div>
+                        <CardTitle>Desafíos del Curso</CardTitle>
+                        <CardDescription>Crea desafíos gamificados para mantener a tus estudiantes motivados.</CardDescription>
+                    </div>
+                    <AIChallengeGenerator onPublish={handlePublishChallenge} />
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    {challenges.length > 0 ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {challenges.map(challenge => (
+                                <Card key={challenge.id} className="flex flex-col">
+                                    <CardHeader>
+                                        <div className="flex justify-between items-start">
+                                            <CardTitle className="text-xl flex items-center gap-2"><AwardIcon className="text-primary"/> {challenge.title}</CardTitle>
+                                            <Button variant="ghost" size="icon" className="shrink-0" onClick={() => handleDeleteChallenge(challenge.id)}>
+                                                <Trash2 className="h-4 w-4 text-destructive"/>
+                                            </Button>
+                                        </div>
+                                        <CardDescription>{challenge.description}</CardDescription>
+                                    </CardHeader>
+                                    <CardContent className="flex-grow">
+                                        <p className="text-sm text-muted-foreground">Tema: <span className="font-semibold">{challenge.topic}</span></p>
+                                    </CardContent>
+                                    <CardFooter>
+                                        <p className="font-bold text-yellow-500 text-lg">+{challenge.points} Puntos</p>
+                                    </CardFooter>
+                                </Card>
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="text-center text-muted-foreground py-10">
+                            <p>Aún no has creado ningún desafío. ¡Usa la IA para empezar!</p>
+                        </div>
+                    )}
+                </CardContent>
             </Card>
         </TabsContent>
 

@@ -2,10 +2,10 @@
 
 import React from "react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Leaderboard } from "@/components/leaderboard"
-import { mockCourses, type Assignment } from "@/lib/mock-data"
+import { mockCourses, type Assignment, type Challenge } from "@/lib/mock-data"
 import { FileText, Award as AwardIcon, CheckCircle2, HelpCircle, ClipboardCheck, ListTodo, Send } from "lucide-react"
 import { Chatbot } from "@/components/chatbot"
 import { QuizChallengeModal } from "@/components/quiz-challenge-modal"
@@ -28,6 +28,7 @@ export default function StudentCoursePage({ params }: { params: { id: string } }
   const course = mockCourses.find(c => c.id === resolvedParams.id)
   
   const [assignments, setAssignments] = React.useState<Assignment[]>([]);
+  const [challenges, setChallenges] = React.useState<Challenge[]>([]);
   const [completedChallenges, setCompletedChallenges] = React.useState<Set<string>>(new Set());
   const [completedAssignments, setCompletedAssignments] = React.useState<Set<string>>(new Set());
   const [viewingAssignment, setViewingAssignment] = React.useState<Assignment | null>(null);
@@ -41,6 +42,11 @@ export default function StudentCoursePage({ params }: { params: { id: string } }
       const storedAssignments = localStorage.getItem(`assignments-${course.id}`);
       if (storedAssignments) {
         setAssignments(JSON.parse(storedAssignments));
+      }
+
+      const storedChallenges = localStorage.getItem(`challenges-${course.id}`);
+      if (storedChallenges) {
+        setChallenges(JSON.parse(storedChallenges));
       }
       
       const storedCompletedChallenges = localStorage.getItem(`completedChallenges-${course.id}`);
@@ -190,44 +196,47 @@ export default function StudentCoursePage({ params }: { params: { id: string } }
 
         <TabsContent value="challenges">
             <Card>
-              <CardHeader>
-                  <CardTitle>Desafíos Disponibles</CardTitle>
-                  <CardDescription>¡Completa desafíos para ganar puntos y subir en la clasificación!</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                  <div className="flex flex-col md:flex-row items-start md:items-center justify-between p-4 rounded-lg border gap-4">
-                      <div>
-                          <h3 className="font-semibold flex items-center gap-2 text-lg"><AwardIcon className="text-primary"/> El Explorador</h3>
-                          <p className="text-sm text-muted-foreground">Completa los dos primeros capítulos.</p>
-                      </div>
-                      <div className="text-right shrink-0">
-                          <p className="font-bold text-primary">+100 Puntos</p>
-                          <Button size="sm" className="mt-1" variant="outline" disabled>
-                            <CheckCircle2 className="mr-2 h-4 w-4 text-green-500" />
-                            Completado
-                          </Button>
-                      </div>
-                  </div>
-                  <div className="flex flex-col md:flex-row items-start md:items-center justify-between p-4 rounded-lg border gap-4">
-                      <div>
-                          <h3 className="font-semibold flex items-center gap-2 text-lg"><AwardIcon className="text-primary"/> Genio del Cuestionario</h3>
-                          <p className="text-sm text-muted-foreground">Obtén 80% o más en el cuestionario de IA.</p>
-                      </div>
-                       <div className="text-right shrink-0">
-                          <p className="font-bold text-primary">+150 Puntos</p>
-                           {completedChallenges.has('quiz-genius') ? (
-                              <Button size="sm" className="mt-1" variant="outline" disabled>
-                                  <CheckCircle2 className="mr-2 h-4 w-4 text-green-500" />
-                                  Completado
-                              </Button>
-                          ) : (
-                              <QuizChallengeModal topic={course.title} onChallengeComplete={() => handleChallengeComplete('quiz-genius')}>
-                                  <Button size="sm" className="mt-1">Iniciar Desafío</Button>
-                              </QuizChallengeModal>
-                          )}
-                      </div>
-                  </div>
-              </CardContent>
+                <CardHeader>
+                    <CardTitle>Desafíos Disponibles</CardTitle>
+                    <CardDescription>¡Completa desafíos para ganar puntos y subir en la clasificación!</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    {challenges.length > 0 ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {challenges.map(challenge => (
+                                <Card key={challenge.id} className="flex flex-col justify-between">
+                                    <CardHeader>
+                                        <CardTitle className="text-xl flex items-center gap-2"><AwardIcon className="text-primary"/> {challenge.title}</CardTitle>
+                                        <CardDescription>{challenge.description}</CardDescription>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <p className="text-sm text-muted-foreground">Tema: <span className="font-semibold">{challenge.topic}</span></p>
+                                    </CardContent>
+                                    <CardFooter className="flex items-center justify-between">
+                                        <p className="font-bold text-yellow-500 text-lg">+{challenge.points} Puntos</p>
+                                        {completedChallenges.has(challenge.id) ? (
+                                            <Button size="sm" variant="outline" disabled>
+                                                <CheckCircle2 className="mr-2 h-4 w-4 text-green-500" />
+                                                Completado
+                                            </Button>
+                                        ) : (
+                                            <QuizChallengeModal 
+                                              challenge={challenge} 
+                                              onChallengeComplete={() => handleChallengeComplete(challenge.id)}
+                                            >
+                                                <Button size="sm">Iniciar Desafío</Button>
+                                            </QuizChallengeModal>
+                                        )}
+                                    </CardFooter>
+                                </Card>
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="text-center text-muted-foreground py-10">
+                            <p>Tu profesor aún no ha publicado ningún desafío. ¡Vuelve pronto!</p>
+                        </div>
+                    )}
+                </CardContent>
             </Card>
         </TabsContent>
         
@@ -236,7 +245,7 @@ export default function StudentCoursePage({ params }: { params: { id: string } }
         </TabsContent>
       </Tabs>
       
-      <Dialog open={!!viewingAssignment} onOpenChange={(open) => !open && handleAssignmentComplete(viewingAssignment?.id || '')}>
+      <Dialog open={!!viewingAssignment} onOpenChange={(open) => !open && setViewingAssignment(null)}>
         <DialogContent className="sm:max-w-2xl">
           {viewingAssignment && (
             <>
@@ -254,6 +263,11 @@ export default function StudentCoursePage({ params }: { params: { id: string } }
                         Obtuviste {quizResults.score} de {quizResults.total} respuestas correctas.
                       </AlertDescription>
                     </Alert>
+                    <DialogFooter className="mt-4">
+                      <Button variant="secondary" onClick={() => handleAssignmentComplete(viewingAssignment!.id)}>
+                        Cerrar
+                      </Button>
+                    </DialogFooter>
                   </div>
                 ) : (
                   <Form {...quizForm}>
@@ -301,9 +315,11 @@ export default function StudentCoursePage({ params }: { params: { id: string } }
               {viewingAssignment.type === 'assignment' && (
                 <div className="py-4 space-y-4">
                     <Textarea placeholder="Escribe tu respuesta aquí..." rows={10}/>
-                    <Button onClick={() => handleAssignmentComplete(viewingAssignment.id)}>
-                        <Send className="mr-2 h-4 w-4"/> Enviar Tarea
-                    </Button>
+                    <DialogFooter>
+                        <Button onClick={() => handleAssignmentComplete(viewingAssignment.id)}>
+                            <Send className="mr-2 h-4 w-4"/> Enviar Tarea
+                        </Button>
+                    </DialogFooter>
                 </div>
               )}
 
@@ -311,19 +327,14 @@ export default function StudentCoursePage({ params }: { params: { id: string } }
                 <div className="py-4 space-y-4">
                      <p className="text-sm text-muted-foreground">Responde las siguientes preguntas:</p>
                      <Textarea placeholder="Tus comentarios son importantes..." rows={10}/>
-                    <Button onClick={() => handleAssignmentComplete(viewingAssignment.id)}>
-                        Enviar Encuesta
-                    </Button>
+                    <DialogFooter>
+                        <Button onClick={() => handleAssignmentComplete(viewingAssignment.id)}>
+                            Enviar Encuesta
+                        </Button>
+                    </DialogFooter>
                 </div>
               )}
             </>
-          )}
-          {!quizResults && (viewingAssignment?.type === 'assignment' || viewingAssignment?.type === 'survey') ? null : (
-             <DialogFooter className="mt-4">
-              <Button variant="secondary" onClick={() => handleAssignmentComplete(viewingAssignment!.id)}>
-                {quizResults ? "Cerrar" : "Marcar como completado"}
-              </Button>
-            </DialogFooter>
           )}
         </DialogContent>
       </Dialog>
