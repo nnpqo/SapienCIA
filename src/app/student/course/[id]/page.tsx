@@ -116,19 +116,7 @@ export default function StudentCoursePage({ params }: { params: { id: string } }
 
   return (
     <div className="p-4 md:p-8">
-      <div className="mb-8">
-        <h1 className="text-4xl font-headline font-bold">{course.title}</h1>
-        <p className="text-lg text-muted-foreground font-body mt-2">{course.description}</p>
-      </div>
-
       <Tabs defaultValue="assignments" className="w-full">
-        <TabsList className="mb-6 grid w-full grid-cols-2 md:grid-cols-4">
-          <TabsTrigger value="materials">Materiales</TabsTrigger>
-          <TabsTrigger value="assignments">Tareas</TabsTrigger>
-          <TabsTrigger value="challenges">Desafíos</TabsTrigger>
-          <TabsTrigger value="leaderboard">Clasificación</TabsTrigger>
-        </TabsList>
-
         <TabsContent value="materials">
           <Card>
             <CardHeader>

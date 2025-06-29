@@ -5,16 +5,15 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
 import { Button } from "@/components/ui/button"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription, DialogFooter, DialogClose } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription, DialogFooter } from "@/components/ui/dialog"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { Label } from "@/components/ui/label"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { generateQuizChallenge, type GenerateQuizChallengeOutput } from "@/ai/flows/generate-quiz-challenge"
-import { Loader2, PartyPopper, Frown, CheckCircle2 } from "lucide-react"
+import { Loader2, PartyPopper, Frown } from "lucide-react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { Separator } from "@/components/ui/separator"
 import { cn } from "@/lib/utils"
 import type { Challenge } from "@/lib/mock-data"
+import { useToast } from "@/hooks/use-toast"
 
 interface QuizChallengeModalProps {
   challenge: Challenge
@@ -31,6 +30,7 @@ export function QuizChallengeModal({ challenge, children, onChallengeComplete }:
   const [quiz, setQuiz] = useState<GenerateQuizChallengeOutput | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [results, setResults] = useState<{ score: number; total: number; explanations: { question: string, explanation: string, isCorrect: boolean }[] } | null>(null)
+  const { toast } = useToast()
   
   const form = useForm<z.infer<typeof FormSchema>>({
     resolver: zodResolver(FormSchema),
@@ -41,25 +41,31 @@ export function QuizChallengeModal({ challenge, children, onChallengeComplete }:
 
   const handleOpen = async (isOpen: boolean) => {
     setOpen(isOpen)
-    if (isOpen && !quiz) {
+    if (isOpen && !quiz && !results) {
       setIsLoading(true)
-      setResults(null)
       form.reset()
       try {
         const generatedQuiz = await generateQuizChallenge({ topic: challenge.topic })
         setQuiz(generatedQuiz)
       } catch (error) {
         console.error("Error generating quiz:", error)
-        // Handle error display inside the modal
+        toast({
+          title: "Error al generar desafío",
+          description: "No se pudo crear el cuestionario. Por favor, intenta de nuevo.",
+          variant: "destructive",
+        })
+        setOpen(false)
       } finally {
         setIsLoading(false)
       }
     }
     if (!isOpen) {
-      // Reset state when closing, unless results are shown
-      if (!results) {
+      // Reset state when closing, for next time
+      setTimeout(() => {
         setQuiz(null)
-      }
+        setResults(null)
+        setIsLoading(false)
+      }, 300)
     }
   }
 
@@ -166,13 +172,6 @@ export function QuizChallengeModal({ challenge, children, onChallengeComplete }:
     )
   }
 
-  const resetAndClose = () => {
-    setQuiz(null);
-    setResults(null);
-    form.reset();
-    setOpen(false);
-  }
-
   return (
     <Dialog open={open} onOpenChange={handleOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
@@ -185,8 +184,8 @@ export function QuizChallengeModal({ challenge, children, onChallengeComplete }:
         </DialogHeader>
         {renderContent()}
          {results && (
-            <DialogFooter>
-                <Button variant="outline" onClick={resetAndClose}>Cerrar</Button>
+            <DialogFooter className="mt-4">
+                <Button variant="outline" onClick={() => setOpen(false)}>Cerrar</Button>
             </DialogFooter>
         )}
       </DialogContent>
