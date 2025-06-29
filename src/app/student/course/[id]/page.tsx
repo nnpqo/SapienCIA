@@ -5,8 +5,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Leaderboard } from "@/components/leaderboard"
-import { mockCourses, type Assignment, type Challenge } from "@/lib/mock-data"
-import { FileText, Award as AwardIcon, CheckCircle2, HelpCircle, ClipboardCheck, ListTodo, Send, BrainCircuit, FileUp } from "lucide-react"
+import { mockCourses, mockStudents, type Assignment, type Challenge, type Prize } from "@/lib/mock-data"
+import { FileText, Award as AwardIcon, CheckCircle2, HelpCircle, ClipboardCheck, ListTodo, Send, BrainCircuit, FileUp, Gift, Lock, CheckCircle } from "lucide-react"
 import { Chatbot } from "@/components/chatbot"
 import { QuizChallengeModal } from "@/components/quiz-challenge-modal"
 import { SubmissionChallengeModal } from "@/components/submission-challenge-modal"
@@ -17,6 +17,7 @@ import { Label } from "@/components/ui/label"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert"
 import { Textarea } from "@/components/ui/textarea"
+import { Badge } from "@/components/ui/badge"
 
 const assignmentIcons = {
   quiz: <HelpCircle className="h-5 w-5 text-primary" />,
@@ -35,38 +36,40 @@ export default function StudentCoursePage({ params }: { params: { id: string } }
   
   const [assignments, setAssignments] = React.useState<Assignment[]>([]);
   const [challenges, setChallenges] = React.useState<Challenge[]>([]);
+  const [prizes, setPrizes] = React.useState<Prize[]>([]);
   const [completedChallenges, setCompletedChallenges] = React.useState<Set<string>>(new Set());
   const [completedAssignments, setCompletedAssignments] = React.useState<Set<string>>(new Set());
+  const [claimedPrizes, setClaimedPrizes] = React.useState<Set<string>>(new Set());
   const [viewingAssignment, setViewingAssignment] = React.useState<Assignment | null>(null);
   const [assignmentSubmission, setAssignmentSubmission] = React.useState("");
   
   const quizForm = useForm<{ answers: Record<string, string> }>()
   const [quizResults, setQuizResults] = React.useState<{ score: number, total: number } | null>(null)
 
+  // For this mock, we assume the logged-in student is the first one in the list.
+  const currentStudent = mockStudents[0];
 
   React.useEffect(() => {
     if (typeof window !== 'undefined' && course) {
       const storedAssignments = localStorage.getItem(`assignments-${course.id}`);
-      if (storedAssignments) {
-        setAssignments(JSON.parse(storedAssignments));
-      }
+      if (storedAssignments) setAssignments(JSON.parse(storedAssignments));
 
       const storedChallenges = localStorage.getItem(`challenges-${course.id}`);
-      if (storedChallenges) {
-        setChallenges(JSON.parse(storedChallenges));
-      }
+      if (storedChallenges) setChallenges(JSON.parse(storedChallenges));
       
+      const storedPrizes = localStorage.getItem(`prizes-${course.id}`);
+      if (storedPrizes) setPrizes(JSON.parse(storedPrizes));
+
       const storedCompletedChallenges = localStorage.getItem(`completedChallenges-${course.id}`);
-      if (storedCompletedChallenges) {
-        setCompletedChallenges(new Set(JSON.parse(storedCompletedChallenges)));
-      }
+      if (storedCompletedChallenges) setCompletedChallenges(new Set(JSON.parse(storedCompletedChallenges)));
 
       const storedCompletedAssignments = localStorage.getItem(`completedAssignments-${course.id}`);
-      if (storedCompletedAssignments) {
-        setCompletedAssignments(new Set(JSON.parse(storedCompletedAssignments)));
-      }
+      if (storedCompletedAssignments) setCompletedAssignments(new Set(JSON.parse(storedCompletedAssignments)));
+
+      const storedClaimedPrizes = localStorage.getItem(`claimedPrizes-${course.id}-${currentStudent.id}`);
+      if (storedClaimedPrizes) setClaimedPrizes(new Set(JSON.parse(storedClaimedPrizes)));
     }
-  }, [course?.id]);
+  }, [course?.id, currentStudent.id]);
 
   const handleChallengeComplete = (challengeId: string) => {
     const updatedCompleted = new Set(completedChallenges).add(challengeId);
@@ -86,6 +89,14 @@ export default function StudentCoursePage({ params }: { params: { id: string } }
     setQuizResults(null);
     quizForm.reset();
     setAssignmentSubmission("");
+  };
+  
+  const handleClaimPrize = (prizeId: string) => {
+    const updatedClaimed = new Set(claimedPrizes).add(prizeId);
+    setClaimedPrizes(updatedClaimed);
+    if (course) {
+      localStorage.setItem(`claimedPrizes-${course.id}-${currentStudent.id}`, JSON.stringify(Array.from(updatedClaimed)));
+    }
   };
 
   const handleOpenAssignment = (assignment: Assignment) => {
@@ -126,9 +137,10 @@ export default function StudentCoursePage({ params }: { params: { id: string } }
   return (
     <div className="p-4 md:p-8">
       <Tabs defaultValue="assignments" className="w-full">
-        <TabsList className="mb-6 grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-4">
+        <TabsList className="mb-6 grid w-full grid-cols-3 sm:grid-cols-3 md:grid-cols-5">
           <TabsTrigger value="assignments">Tareas</TabsTrigger>
           <TabsTrigger value="challenges">Desafíos</TabsTrigger>
+          <TabsTrigger value="prizes">Premios</TabsTrigger>
           <TabsTrigger value="materials">Materiales</TabsTrigger>
           <TabsTrigger value="leaderboard">Clasificación</TabsTrigger>
         </TabsList>
@@ -254,6 +266,56 @@ export default function StudentCoursePage({ params }: { params: { id: string } }
             </Card>
         </TabsContent>
         
+        <TabsContent value="prizes">
+            <Card>
+                <CardHeader>
+                    <CardTitle>Premios Disponibles</CardTitle>
+                    <CardDescription>¡Canjea tus puntos por increíbles recompensas!</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    {prizes.length > 0 ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {prizes
+                                .filter(prize => prize.target === 'course' || prize.studentId === currentStudent.id)
+                                .map(prize => {
+                                    const canClaim = currentStudent.points >= prize.pointsRequired;
+                                    const isClaimed = claimedPrizes.has(prize.id);
+                                    
+                                    return (
+                                        <Card key={prize.id} className="flex flex-col">
+                                            <CardHeader>
+                                                <CardTitle className="text-xl flex items-center gap-2">
+                                                    <Gift className="text-primary" /> {prize.title}
+                                                </CardTitle>
+                                                <CardDescription>{prize.description}</CardDescription>
+                                            </CardHeader>
+                                            <CardContent className="flex-grow">
+                                                <p className="text-lg font-bold text-yellow-500">{prize.pointsRequired.toLocaleString()} Puntos</p>
+                                            </CardContent>
+                                            <CardFooter>
+                                                <Button 
+                                                    className="w-full"
+                                                    onClick={() => handleClaimPrize(prize.id)}
+                                                    disabled={!canClaim || isClaimed}
+                                                >
+                                                    {isClaimed ? <><CheckCircle className="mr-2"/>Reclamado</> : 
+                                                     !canClaim ? <><Lock className="mr-2"/>Insuficiente</> : 'Reclamar Premio'}
+                                                </Button>
+                                            </CardFooter>
+                                        </Card>
+                                    )
+                                })
+                            }
+                        </div>
+                    ) : (
+                        <div className="text-center text-muted-foreground py-10">
+                            <p>Tu profesor aún no ha publicado ningún premio. ¡Sigue acumulando puntos!</p>
+                        </div>
+                    )}
+                </CardContent>
+            </Card>
+        </TabsContent>
+
         <TabsContent value="leaderboard">
           <Leaderboard />
         </TabsContent>

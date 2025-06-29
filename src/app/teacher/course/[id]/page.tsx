@@ -5,8 +5,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Leaderboard } from "@/components/leaderboard"
-import { mockCourses, mockStudents, type Assignment, type Question, type Challenge } from "@/lib/mock-data"
-import { FileText, PlusCircle, User, Award as AwardIcon, Trash2, HelpCircle, ClipboardCheck, ListTodo, Pencil, Wand2, BrainCircuit, FileUp } from "lucide-react"
+import { mockCourses, mockStudents, type Assignment, type Question, type Challenge, type Prize } from "@/lib/mock-data"
+import { FileText, PlusCircle, User, Trash2, HelpCircle, ClipboardCheck, ListTodo, Pencil, Wand2, BrainCircuit, FileUp, Gift } from "lucide-react"
 import { AIContentGenerator } from "@/components/ai-content-generator"
 import { AIChallengeGenerator } from "@/components/ai-challenge-generator"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -17,6 +17,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { useForm } from "react-hook-form"
+import { CreatePrizeModal } from "@/components/create-prize-modal"
 
 const assignmentIcons = {
   quiz: <HelpCircle className="h-5 w-5 text-primary" />,
@@ -34,6 +35,7 @@ export default function TeacherCoursePage({ params }: { params: { id: string } }
   const course = mockCourses.find(c => c.id === resolvedParams.id)
   const [assignments, setAssignments] = React.useState<Assignment[]>([]);
   const [challenges, setChallenges] = React.useState<Challenge[]>([]);
+  const [prizes, setPrizes] = React.useState<Prize[]>([]);
   const [assignmentToEdit, setAssignmentToEdit] = React.useState<Assignment | null>(null);
 
   const { register, handleSubmit, setValue, getValues } = useForm<Assignment>();
@@ -47,6 +49,10 @@ export default function TeacherCoursePage({ params }: { params: { id: string } }
        const storedChallenges = localStorage.getItem(`challenges-${course.id}`);
       if (storedChallenges) {
         setChallenges(JSON.parse(storedChallenges));
+      }
+      const storedPrizes = localStorage.getItem(`prizes-${course.id}`);
+      if (storedPrizes) {
+          setPrizes(JSON.parse(storedPrizes));
       }
     }
   }, [course?.id]);
@@ -121,6 +127,26 @@ export default function TeacherCoursePage({ params }: { params: { id: string } }
     }
   };
   
+  const handlePublishPrize = (newPrizeData: Omit<Prize, 'id'>) => {
+    const newPrize: Prize = {
+      ...newPrizeData,
+      id: `prz-${Date.now()}`,
+    };
+    const updatedPrizes = [...prizes, newPrize];
+    setPrizes(updatedPrizes);
+    if (course) {
+      localStorage.setItem(`prizes-${course.id}`, JSON.stringify(updatedPrizes));
+    }
+  };
+
+  const handleDeletePrize = (prizeId: string) => {
+      const updatedPrizes = prizes.filter(p => p.id !== prizeId);
+      setPrizes(updatedPrizes);
+      if (course) {
+        localStorage.setItem(`prizes-${course.id}`, JSON.stringify(updatedPrizes));
+      }
+  };
+
   if (!course) {
     return (
         <div className="flex h-screen items-center justify-center">
@@ -137,10 +163,11 @@ export default function TeacherCoursePage({ params }: { params: { id: string } }
       </div>
 
       <Tabs defaultValue="assignments" className="w-full">
-        <TabsList className="mb-6 grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-5">
+        <TabsList className="mb-6 grid w-full grid-cols-3 sm:grid-cols-3 md:grid-cols-6">
           <TabsTrigger value="materials">Materiales</TabsTrigger>
           <TabsTrigger value="assignments">Tareas</TabsTrigger>
           <TabsTrigger value="challenges">Desafíos</TabsTrigger>
+          <TabsTrigger value="prizes">Premios</TabsTrigger>
           <TabsTrigger value="students">Estudiantes</TabsTrigger>
           <TabsTrigger value="leaderboard">Clasificación</TabsTrigger>
         </TabsList>
@@ -278,6 +305,51 @@ export default function TeacherCoursePage({ params }: { params: { id: string } }
                     ) : (
                         <div className="text-center text-muted-foreground py-10">
                             <p>Aún no has creado ningún desafío. ¡Usa la IA para empezar!</p>
+                        </div>
+                    )}
+                </CardContent>
+            </Card>
+        </TabsContent>
+
+        <TabsContent value="prizes">
+            <Card>
+                <CardHeader className="flex flex-col md:flex-row items-start md:items-center justify-between gap-2">
+                    <div>
+                        <CardTitle>Premios del Curso</CardTitle>
+                        <CardDescription>Crea recompensas para incentivar a tus estudiantes.</CardDescription>
+                    </div>
+                    <CreatePrizeModal onPublish={handlePublishPrize} courseId={course.id} />
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    {prizes.length > 0 ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {prizes.map(prize => (
+                                <Card key={prize.id}>
+                                    <CardHeader>
+                                        <div className="flex justify-between items-start">
+                                            <CardTitle className="text-xl flex items-center gap-2">
+                                                <Gift className="text-primary" /> {prize.title}
+                                            </CardTitle>
+                                            <Button variant="ghost" size="icon" onClick={() => handleDeletePrize(prize.id)}>
+                                                <Trash2 className="h-4 w-4 text-destructive" />
+                                            </Button>
+                                        </div>
+                                        <CardDescription>{prize.description}</CardDescription>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <p className="text-sm text-muted-foreground">
+                                            Objetivo: <Badge variant="outline">{prize.target === 'course' ? 'Todo el curso' : mockStudents.find(s => s.id === prize.studentId)?.name || 'Estudiante específico'}</Badge>
+                                        </p>
+                                    </CardContent>
+                                    <CardFooter>
+                                        <p className="font-bold text-yellow-500 text-lg">{prize.pointsRequired.toLocaleString()} Puntos</p>
+                                    </CardFooter>
+                                </Card>
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="text-center text-muted-foreground py-10">
+                            <p>Aún no has creado ningún premio. ¡Crea uno para empezar!</p>
                         </div>
                     )}
                 </CardContent>

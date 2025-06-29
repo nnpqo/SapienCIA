@@ -22,6 +22,17 @@ export interface Challenge {
   topic: string; // The topic for the AI to generate questions
 }
 
+export interface Prize {
+  id: string;
+  courseId: string;
+  title: string;
+  description: string;
+  pointsRequired: number;
+  target: 'course' | 'student';
+  studentId?: string;
+}
+
+
 export interface Course {
   id: string;
   title: string;
