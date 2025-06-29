@@ -43,7 +43,7 @@ export function AIContentGenerator({ courseName, onPublish }: AIContentGenerator
     }
   })
 
-  const onSubmit = async (data: Omit<GenerateEducationalContentInput, 'courseName'>) => {
+  const onGenerate = async (data: Omit<GenerateEducationalContentInput, 'courseName'>) => {
     setIsLoading(true)
     setGeneratedContent(null)
     try {
@@ -57,7 +57,7 @@ export function AIContentGenerator({ courseName, onPublish }: AIContentGenerator
     }
   }
 
-  const handlePublish = (data: FormData) => {
+  const onPublishClick = (data: FormData) => {
     if (generatedContent && generatedContent.title !== "Error") {
       onPublish({
         title: generatedContent.title,
@@ -92,153 +92,145 @@ export function AIContentGenerator({ courseName, onPublish }: AIContentGenerator
           <DialogTitle className="font-headline text-2xl">Generar Contenido Educativo</DialogTitle>
           <DialogDescription>Usa la IA para crear rápidamente cuestionarios, encuestas o tareas para tu curso.</DialogDescription>
         </DialogHeader>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 py-4">
-          <form id="ai-content-form" onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            <div>
-              <Label>Tipo de Contenido</Label>
-              <Controller
-                name="contentType"
-                control={control}
-                render={({ field }) => (
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <SelectTrigger><SelectValue placeholder="Selecciona el tipo de contenido" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="quiz">Cuestionario</SelectItem>
-                      <SelectItem value="survey">Encuesta</SelectItem>
-                      <SelectItem value="assignment">Tarea</SelectItem>
-                    </SelectContent>
-                  </Select>
-                )}
-              />
-            </div>
-            <div>
-              <Label htmlFor="topic">Tema</Label>
-              <Input id="topic" {...register("topic", { required: "El tema es obligatorio" })} placeholder="Ej: Introducción a Redes Neuronales" />
-              {errors.topic && <p className="text-sm text-destructive mt-1">{errors.topic.message}</p>}
-            </div>
-             <div>
-              <Label>Fecha de Entrega</Label>
-               <Controller
-                name="dueDate"
-                control={control}
-                render={({ field }) => {
-                  const handleDateSelect = (date: Date | undefined) => {
-                    if (!date) {
-                      field.onChange(undefined);
-                      return;
-                    }
-                    const currentValue = field.value || new Date();
-                    const newDate = new Date(date);
-                    
-                    newDate.setHours(currentValue.getHours());
-                    newDate.setMinutes(currentValue.getMinutes());
-
-                    field.onChange(newDate);
-                  };
-
-                  const handleTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-                    const time = e.target.value;
-                    if (!time) return;
-
-                    const [hours, minutes] = time.split(':').map(Number);
-                    const currentValue = field.value || new Date();
-                    const newDate = new Date(currentValue);
-                    newDate.setHours(hours);
-                    newDate.setMinutes(minutes);
-                    
-                    field.onChange(newDate);
-                  };
-                  
-                  const timeValue = field.value ? format(field.value, 'HH:mm') : '';
-
-                  return (
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant={"outline"}
-                          className={cn(
-                            "w-full justify-start text-left font-normal",
-                            !field.value && "text-muted-foreground"
-                          )}
-                        >
-                          <CalendarIcon className="mr-2 h-4 w-4" />
-                          {field.value ? format(field.value, "dd MMM, yyyy 'a las' p", { locale: es }) : <span>Elige una fecha y hora</span>}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0">
-                        <Calendar
-                          mode="single"
-                          selected={field.value}
-                          onSelect={handleDateSelect}
-                          initialFocus
-                        />
-                        <div className="p-3 border-t border-border">
-                          <Label className="text-sm">Hora de entrega</Label>
-                          <Input 
-                            type="time" 
-                            className="mt-2"
-                            value={timeValue}
-                            onChange={handleTimeChange} 
-                          />
-                        </div>
-                      </PopoverContent>
-                    </Popover>
-                  )
-                }}
-              />
-            </div>
-            <div>
-              <Label htmlFor="length">Longitud</Label>
-              <Input id="length" {...register("length")} placeholder="Ej: 5 preguntas" />
-            </div>
-            <div>
-              <Label htmlFor="additionalInstructions">Instrucciones Adicionales</Label>
-              <Textarea id="additionalInstructions" {...register("additionalInstructions")} placeholder="Ej: Enfocarse en ejemplos prácticos" />
-            </div>
-            <Button type="submit" disabled={isLoading} className="w-full">
-              {isLoading ? "Generando..." : "Generar Contenido"}
-            </Button>
-          </form>
-
-          <div className="bg-secondary/50 p-4 rounded-lg flex flex-col">
-            <h3 className="font-headline mb-4 text-center">Contenido Generado</h3>
-            <ScrollArea className="bg-background rounded-md border p-4 h-[400px]">
-              {isLoading ? (
-                <div className="flex h-full items-center justify-center text-muted-foreground">
-                  <p>La IA está pensando...</p>
-                </div>
-              ) : generatedContent ? (
-                <div className="space-y-4">
-                  <h4 className="font-bold text-lg">{generatedContent.title}</h4>
-                  {generatedContent.contentType === 'quiz' && generatedContent.questions ? (
-                    <div className="space-y-3 text-sm">
-                      <p className="italic">{generatedContent.content}</p>
-                      {generatedContent.questions.map((q, i) => (
-                        <div key={i} className="pb-2">
-                          <p className="font-semibold">{i + 1}. {q.question}</p>
-                          <ul className="list-disc pl-5">
-                            {q.options.map((opt, j) => (
-                              <li key={j} className={j === q.correctAnswerIndex ? 'font-bold' : ''}>{opt}</li>
-                            ))}
-                          </ul>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                     <p className="text-sm whitespace-pre-wrap">{generatedContent.content}</p>
+        <form onSubmit={handleSubmit(onGenerate)}>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 py-4">
+            <div className="space-y-4">
+              <div>
+                <Label>Tipo de Contenido</Label>
+                <Controller
+                  name="contentType"
+                  control={control}
+                  render={({ field }) => (
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <SelectTrigger><SelectValue placeholder="Selecciona el tipo de contenido" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="quiz">Cuestionario</SelectItem>
+                        <SelectItem value="survey">Encuesta</SelectItem>
+                        <SelectItem value="assignment">Tarea</SelectItem>
+                      </SelectContent>
+                    </Select>
                   )}
-                </div>
-              ) : (
-                <div className="flex h-full items-center justify-center text-center text-muted-foreground">
-                  <p>Tu contenido generado aparecerá aquí.</p>
-                </div>
-              )}
-            </ScrollArea>
+                />
+              </div>
+              <div>
+                <Label htmlFor="topic">Tema</Label>
+                <Input id="topic" {...register("topic", { required: "El tema es obligatorio" })} placeholder="Ej: Introducción a Redes Neuronales" />
+                {errors.topic && <p className="text-sm text-destructive mt-1">{errors.topic.message}</p>}
+              </div>
+              <div>
+                <Label>Fecha de Entrega</Label>
+                 <Controller
+                    name="dueDate"
+                    control={control}
+                    rules={{ required: "La fecha de entrega es obligatoria" }}
+                    render={({ field }) => {
+                        const handleDateSelect = (selectedDate: Date | undefined) => {
+                            if (!selectedDate) return;
+                            const hours = field.value?.getHours() ?? 0;
+                            const minutes = field.value?.getMinutes() ?? 0;
+                            const newDate = new Date(selectedDate);
+                            newDate.setHours(hours, minutes, 0, 0);
+                            field.onChange(newDate);
+                        };
+
+                        const handleTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+                            if (!field.value) return;
+                            const time = e.target.value;
+                            if (!time) return;
+                            const [hours, minutes] = time.split(':').map(Number);
+                            const newDate = new Date(field.value);
+                            newDate.setHours(hours, minutes, 0, 0);
+                            field.onChange(newDate);
+                        };
+
+                        return (
+                        <Popover>
+                            <PopoverTrigger asChild>
+                                <Button
+                                    variant={"outline"}
+                                    className={cn("w-full justify-start text-left font-normal",!field.value && "text-muted-foreground")}>
+                                    <CalendarIcon className="mr-2 h-4 w-4" />
+                                    {field.value ? format(field.value, "dd MMM, yyyy 'a las' p", { locale: es }) : <span>Elige fecha y hora</span>}
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0">
+                                <Calendar
+                                    mode="single"
+                                    selected={field.value}
+                                    onSelect={handleDateSelect}
+                                    disabled={(date) => date < new Date(new Date().setHours(0,0,0,0))}
+                                    initialFocus
+                                />
+                                <div className="p-3 border-t border-border">
+                                    <Label className="text-sm">Hora de entrega</Label>
+                                    <Input
+                                        type="time"
+                                        className="mt-2"
+                                        value={field.value ? format(field.value, 'HH:mm') : ''}
+                                        onChange={handleTimeChange}
+                                        disabled={!field.value}
+                                    />
+                                </div>
+                            </PopoverContent>
+                        </Popover>
+                        );
+                    }}
+                 />
+                 {errors.dueDate && <p className="text-sm text-destructive mt-1">{errors.dueDate.message}</p>}
+              </div>
+              <div>
+                <Label htmlFor="length">Longitud</Label>
+                <Input id="length" {...register("length")} placeholder="Ej: 5 preguntas" />
+              </div>
+              <div>
+                <Label htmlFor="additionalInstructions">Instrucciones Adicionales</Label>
+                <Textarea id="additionalInstructions" {...register("additionalInstructions")} placeholder="Ej: Enfocarse en ejemplos prácticos" />
+              </div>
+              <Button type="submit" disabled={isLoading} className="w-full">
+                {isLoading ? "Generando..." : "Generar Contenido"}
+              </Button>
+            </div>
+
+            <div className="bg-secondary/50 p-4 rounded-lg flex flex-col">
+              <h3 className="font-headline mb-4 text-center">Contenido Generado</h3>
+              <ScrollArea className="bg-background rounded-md border p-4 h-[400px]">
+                {isLoading ? (
+                  <div className="flex h-full items-center justify-center text-muted-foreground">
+                    <p>La IA está pensando...</p>
+                  </div>
+                ) : generatedContent ? (
+                  <div className="space-y-4">
+                    <h4 className="font-bold text-lg">{generatedContent.title}</h4>
+                    {generatedContent.contentType === 'quiz' && generatedContent.questions ? (
+                      <div className="space-y-3 text-sm">
+                        <p className="italic">{generatedContent.content}</p>
+                        {generatedContent.questions.map((q, i) => (
+                          <div key={i} className="pb-2">
+                            <p className="font-semibold">{i + 1}. {q.question}</p>
+                            <ul className="list-disc pl-5">
+                              {q.options.map((opt, j) => (
+                                <li key={j} className={j === q.correctAnswerIndex ? 'font-bold' : ''}>{opt}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                       <p className="text-sm whitespace-pre-wrap">{generatedContent.content}</p>
+                    )}
+                  </div>
+                ) : (
+                  <div className="flex h-full items-center justify-center text-center text-muted-foreground">
+                    <p>Tu contenido generado aparecerá aquí.</p>
+                  </div>
+                )}
+              </ScrollArea>
+            </div>
           </div>
-        </div>
+        </form>
         <DialogFooter className="pt-4">
           <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
-          <Button onClick={handleSubmit(handlePublish)} disabled={!generatedContent || isLoading || generatedContent?.title === "Error"}>
+          <Button onClick={handleSubmit(onPublishClick)} disabled={!generatedContent || isLoading || generatedContent?.title === "Error"}>
             <Upload className="mr-2 h-4 w-4" />
             Publicar
           </Button>
